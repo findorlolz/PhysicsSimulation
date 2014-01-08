@@ -2,6 +2,7 @@
 
 #include "gui/Window.hpp"
 #include "gui/CommonControls.hpp"
+#include "Render.h"
 
 namespace FW
 {
@@ -24,10 +25,18 @@ private:
 	App( const App& ); // forbidden
     App& operator=( const App& ); // forbidden
 
+	void startUp();
+	void shutDown();
+	void reShapeFunc();
+
 private:
 	Window m_window;
 	CommonControls m_commonCtrl;
 	Action m_action;
+	Renderer* m_renderer;
+	AssetManager* m_assetManager;
+	Camera*	m_camera;
+	std::vector<FW::Vec3f> m_positions;
 
 };
 

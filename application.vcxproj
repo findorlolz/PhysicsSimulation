@@ -337,9 +337,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\basis\App.hpp" />
+    <ClInclude Include="src\basis\AssetManager.h" />
+    <ClInclude Include="src\basis\Camera.h" />
+    <ClInclude Include="src\basis\HelpFunctions.h" />
+    <ClInclude Include="src\basis\Render.h" />
+    <ClInclude Include="src\basis\Shaders.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\basis\App.cpp" />
+    <ClCompile Include="src\basis\AssetManager.cpp" />
+    <ClCompile Include="src\basis\Camera.cpp" />
+    <ClCompile Include="src\basis\Render.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
