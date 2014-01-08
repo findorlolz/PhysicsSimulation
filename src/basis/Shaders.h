@@ -11,12 +11,12 @@ Shader* getBasicShader()
 		"#version 120\n"
 		FW_GL_SHADER_SOURCE(
 		attribute vec3 positionAttrib;
-		//uniform mat4 posToClip;		
+		uniform mat4 posToClip;		
 
 		void main()
 		{
 			vec4 pos = vec4(positionAttrib, 1.0);
-			gl_Position = pos;
+			gl_Position = pos * posToClip;
 		}
 		),
 		"#version 120\n"

@@ -3,7 +3,6 @@
 
 void AssetManager::LoadAssets()
 {
-        // Meshes
         m_meshes[MeshType_Pyramid] = importMesh("banana.obj");
 }
 

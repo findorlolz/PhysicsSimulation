@@ -27,15 +27,13 @@ void Renderer::render(const std::vector<FW::Vec3f>& positions)
 	rotation.setCol(3, Vec4f(0, 0, m_camera->GetDistance(), 1));
 	Mat4f perspective = m_camera->GetPerspective();
 	posToClip = perspective * rotation;
-	posToClip = posToClip.transposed();
-	//m_context->setUniform(m_shader->getUniformLoc("posToClip"), posToClip);
 	for (auto pos : positions)
     {
 		FW::Mat4f transform;
 		transform.setIdentity();
 		MeshType meshType = MeshType_Pyramid;
         FW::MeshBase* mesh = m_assetManager->getMesh(meshType);
-		drawMesh(mesh, transform);
+		mesh->draw(m_context, FW::Mat4f(), FW::Mat4f());
 	}	
 	glBindVertexArray(0);
 	glUseProgram(0);
@@ -55,6 +53,8 @@ void Renderer::drawMesh(FW::MeshBase* mesh, const FW::Mat4f& transform)
 	{
 		const FW::MeshBase::Material& mat = mesh->material(i);
 		m_context->setUniform(m_shader->getUniformLoc("diffuseUniform"), mat.diffuse);
+		auto tmp1 = mesh->vboIndexSize(i);
+		auto tmp2 = (void*)(FW::UPTR)mesh->vboIndexOffset(i);
 		glDrawElements(GL_TRIANGLES, mesh->vboIndexSize(i), GL_UNSIGNED_INT, (void*)(FW::UPTR)mesh->vboIndexOffset(i));
 	}
     m_context->resetAttribs();
