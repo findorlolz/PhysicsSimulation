@@ -5,13 +5,20 @@ using namespace FW;
 
 App::App( void ) : 
 	m_commonCtrl( CommonControls::Feature_Default & ~CommonControls::Feature_RepaintOnF5 ),
-	m_action( Action_None )
+	m_cameraCtrl(&m_commonCtrl, CameraControls::Feature_All),
+	m_action( Action_None ),
+	m_stateChange( false ),
+	m_visibleCameraControls(false)
 {
 	m_commonCtrl.showFPS(true);
 
 	m_window.setTitle("Application");
     m_window.addListener(this);
     m_window.addListener(&m_commonCtrl);
+	m_window.addListener(&m_cameraCtrl);
+
+	m_commonCtrl.addButton((S32*)&m_action, Action_ToggleCameraCtrlVisibility, FW_KEY_F1, "Toggle visibility of camera controls");
+	m_commonCtrl.addSeparator();
 
 	FW::GLContext::Config conf = m_window.getGLConfig();
 	conf.numSamples = 4;
@@ -26,33 +33,26 @@ void App::startUp()
         m_assetManager = new AssetManager();
         m_assetManager->LoadAssets();
 
-		m_camera = new Camera();
-		m_camera->StartUp();
-		reShapeFunc();
-
         m_renderer = new Renderer();
-		m_renderer->startUp(m_window.getGL(), m_camera, m_assetManager);
+		m_renderer->startUp(m_window.getGL(), &m_cameraCtrl, m_assetManager);
 
 		m_positions.push_back(FW::Vec3f());
+		m_positions.push_back(FW::Vec3f(1,1,0));
 }
 
-void App::reShapeFunc()
-{
-	FW::Vec2i size = m_window.getSize();
-	m_camera->SetDimensions(size.x, size.y);
-	m_camera->SetViewport(0,0,size.x,size.y);
-	m_camera->ApplyViewport();
-	m_camera->SetPerspective(90);
-}
 
 void App::shutDown()
 {
 	if(m_renderer != nullptr)
+	{
+		m_renderer->shutDown();
 		delete m_renderer;
+	}
 	if(m_assetManager != nullptr)
+	{
+		m_assetManager->ReleaseAssets();
 		delete m_assetManager;
-	if(m_camera != nullptr)
-		delete m_camera;
+	}
 }
 
 bool App::handleEvent( const Window::Event& event )
@@ -73,8 +73,10 @@ bool App::handleEvent( const Window::Event& event )
 	case Action_None:
 		break;
 
-	case Action_Temp:
-		m_commonCtrl.message("Temp action");
+	case Action_ToggleCameraCtrlVisibility:
+		m_commonCtrl.message("Toggle visibility of camera controls");
+		m_visibleCameraControls = !m_visibleCameraControls;
+		m_stateChange = true;
 		break;
 
 	default:
@@ -82,16 +84,28 @@ bool App::handleEvent( const Window::Event& event )
 		break;
 	}
 
+	if(m_stateChange)
+		updateAppState();
+	
+
 	m_window.setVisible(true);
 	if (event.type == Window::EventType_Paint)
 	{
-		reShapeFunc();
 		m_renderer->render(m_positions);
 
 	}
 	m_window.repaint();
 
 	return false;
+}
+
+void App::updateAppState()
+{
+	if(m_visibleCameraControls)
+		m_cameraCtrl.addGUIControls();
+	else
+		m_cameraCtrl.removeGUIControls();
+	m_stateChange = false;
 }
 
 void FW::init(void) 

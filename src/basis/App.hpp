@@ -13,7 +13,7 @@ private:
     enum Action
     {
         Action_None,
-		Action_Temp
+		Action_ToggleCameraCtrlVisibility
     };
 
 public:
@@ -27,15 +27,17 @@ private:
 
 	void startUp();
 	void shutDown();
-	void reShapeFunc();
+	void updateAppState();
 
 private:
 	Window m_window;
 	CommonControls m_commonCtrl;
+	CameraControls	m_cameraCtrl;
+	bool m_visibleCameraControls;
+	bool m_stateChange;
 	Action m_action;
 	Renderer* m_renderer;
 	AssetManager* m_assetManager;
-	Camera*	m_camera;
 	std::vector<FW::Vec3f> m_positions;
 
 };
