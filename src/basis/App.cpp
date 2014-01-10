@@ -5,8 +5,9 @@ using namespace FW;
 
 App::App( void ) : 
 	m_commonCtrl( CommonControls::Feature_Default & ~CommonControls::Feature_RepaintOnF5 ),
-	m_cameraCtrl(&m_commonCtrl, CameraControls::Feature_All),
+	m_cameraCtrl(&m_commonCtrl, CameraControls::Feature_All | CameraControls::Feature_StereoControls),
 	m_action( Action_None ),
+	m_scale(1.0f),
 	m_stateChange( false ),
 	m_visibleCameraControls(false)
 {
@@ -17,8 +18,11 @@ App::App( void ) :
     m_window.addListener(&m_commonCtrl);
 	m_window.addListener(&m_cameraCtrl);
 
-	m_commonCtrl.addButton((S32*)&m_action, Action_ToggleCameraCtrlVisibility, FW_KEY_F1, "Toggle visibility of camera controls");
 	m_commonCtrl.addSeparator();
+	m_commonCtrl.addButton((S32*)&m_action, Action_ToggleCameraCtrlVisibility, FW_KEY_F1, "Toggle visibility of camera controls");
+	m_commonCtrl.addSlider(&m_scale, 0.01f, 10.0f, true, FW_KEY_NONE, FW_KEY_NONE, "Scale meshes");
+	m_commonCtrl.addSeparator();
+	m_cameraCtrl.removeGUIControls();
 
 	FW::GLContext::Config conf = m_window.getGLConfig();
 	conf.numSamples = 4;
@@ -37,7 +41,7 @@ void App::startUp()
 		m_renderer->startUp(m_window.getGL(), &m_cameraCtrl, m_assetManager);
 
 		m_positions.push_back(FW::Vec3f());
-		m_positions.push_back(FW::Vec3f(1,1,0));
+		//m_positions.push_back(FW::Vec3f(1,1,0));
 }
 
 
@@ -91,8 +95,7 @@ bool App::handleEvent( const Window::Event& event )
 	m_window.setVisible(true);
 	if (event.type == Window::EventType_Paint)
 	{
-		m_renderer->render(m_positions);
-
+		m_renderer->renderTest();
 	}
 	m_window.repaint();
 

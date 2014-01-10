@@ -12,8 +12,8 @@ public:
 		void startUp(FW::GLContext*, FW::CameraControls*, AssetManager*);
         void shutDown();
 
-        void render(const std::vector<FW::Vec3f>&);
-
+		void render(const std::vector<FW::Vec3f>&, const float);
+		void renderTest();
 private:
         FW::GLContext* m_context;
 		FW::CameraControls* m_camera;

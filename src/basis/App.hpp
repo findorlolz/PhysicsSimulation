@@ -13,7 +13,7 @@ private:
     enum Action
     {
         Action_None,
-		Action_ToggleCameraCtrlVisibility
+		Action_ToggleCameraCtrlVisibility,
     };
 
 public:
@@ -35,6 +35,7 @@ private:
 	CameraControls	m_cameraCtrl;
 	bool m_visibleCameraControls;
 	bool m_stateChange;
+	float m_scale;
 	Action m_action;
 	Renderer* m_renderer;
 	AssetManager* m_assetManager;
