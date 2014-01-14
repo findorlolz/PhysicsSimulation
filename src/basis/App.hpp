@@ -2,7 +2,7 @@
 
 #include "gui/Window.hpp"
 #include "gui/CommonControls.hpp"
-#include "Render.h"
+#include "System.h"
 
 namespace FW
 {
@@ -13,6 +13,7 @@ private:
     enum Action
     {
         Action_None,
+		Action_EnableCamera,
 		Action_ToggleCameraCtrlVisibility,
     };
 
@@ -36,10 +37,13 @@ private:
 	bool m_visibleCameraControls;
 	bool m_stateChange;
 	float m_scale;
+	float m_lastFrameTick;
+
 	Action m_action;
-	Renderer* m_renderer;
 	AssetManager* m_assetManager;
-	std::vector<FW::Vec3f> m_positions;
+
+	System* m_system;
+	FW::Timer m_timer;
 
 };
 

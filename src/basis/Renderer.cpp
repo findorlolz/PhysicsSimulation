@@ -1,4 +1,4 @@
-#include "Render.h"
+#include "Renderer.h"
 #include "base/Main.hpp"
 
 void Renderer::startUp(FW::GLContext* gl, FW::CameraControls* camera, AssetManager* assetManager)
@@ -7,47 +7,41 @@ void Renderer::startUp(FW::GLContext* gl, FW::CameraControls* camera, AssetManag
         m_assetManager = assetManager;
 		m_camera = camera;
 		m_projection = FW::Mat4f();
-
-		m_camera->setFar(100);
+		m_meshScale = FW::Mat4f();
 }
 
 void Renderer::shutDown()
 {
+	delete &get();
 }
 
-void Renderer::render(const std::vector<FW::Vec3f>& positions, const float scale)
+void Renderer::startFrame(const float scale)
 {
 	glClearColor(0.2f, 0.4f, 0.8f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	FW::Mat4f scaling = FW::Mat4f::scale(FW::Vec3f(scale, scale, scale));
-	FW::Mat4f worldToCameraLeft = m_camera->getCameraToLeftEye();
-	FW::Mat4f worldToCamaraRight = m_camera->getCameraToRightEye();
 	m_projection = m_context->xformFitToView(FW::Vec2f(-1.0f, -1.0f), FW::Vec2f(2.0f, 2.0f)) * m_camera->getCameraToClip();
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glDrawBuffer(GL_BACK_LEFT);
-	for (auto pos : positions)
-    {
-		FW::Mat4f toCamera = FW::Mat4f::translate(pos);
-		MeshType meshType = MeshType_Sphere;					
-		FW::MeshBase* mesh = m_assetManager->getMesh(meshType);
-		mesh->draw(m_context, worldToCameraLeft * toCamera * scaling, m_projection);
-	}
-	glClear(GL_DEPTH_BUFFER_BIT);
-	glDrawBuffer(GL_BACK_RIGHT);
-	for (auto pos : positions)
-    {
-		FW::Mat4f toCamera = FW::Mat4f::translate(pos);
-		MeshType meshType = MeshType_Sphere;					
-		FW::MeshBase* mesh = m_assetManager->getMesh(meshType);
-		mesh->draw(m_context, worldToCamaraRight * toCamera * scaling, m_projection);
-	}
+	m_worldToCamera = m_camera->getWorldToCamera();
+	m_meshScale = FW::Mat4f::scale(FW::Vec3f(scale, scale, scale));
+}
+
+void Renderer::endFrame()
+{
 	glDrawBuffer(GL_BACK);
 	glBindVertexArray(0);
 	glUseProgram(0);
 }
 
-void Renderer::renderTest()
+
+void Renderer::drawParticle(const FW::Vec3f pos)
+{
+	FW::Mat4f toCamera = FW::Mat4f::translate(pos);
+	MeshType meshType = MeshType_Sphere;					
+	FW::MeshBase* mesh = m_assetManager->getMesh(meshType);
+	mesh->draw(m_context, m_worldToCamera * toCamera * m_meshScale, m_projection);
+}
+
+void Renderer::renderTest(const float scale)
 {
 	MeshType meshType = MeshType_Sphere;					
 	FW::MeshBase* mesh = m_assetManager->getMesh(meshType);
@@ -55,10 +49,11 @@ void Renderer::renderTest()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 	FW::Mat4f worldToCamera = m_camera->getWorldToCamera();
+	FW::Mat4f scaling = FW::Mat4f::scale(FW::Vec3f(scale, scale, scale));
 	m_projection = m_context->xformFitToView(FW::Vec2f(-1.0f, -1.0f), FW::Vec2f(2.0f, 2.0f)) * m_camera->getCameraToClip();
 	if (!m_context->getConfig().isStereo)
 	{
-		mesh->draw(m_context, worldToCamera, m_projection);
+		mesh->draw(m_context, worldToCamera * scaling, m_projection);
 		return;
 	}
 	FW::Mat4f worldToCameraLeft = m_camera->getCameraToLeftEye();

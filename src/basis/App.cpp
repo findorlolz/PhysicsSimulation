@@ -5,9 +5,10 @@ using namespace FW;
 
 App::App( void ) : 
 	m_commonCtrl( CommonControls::Feature_Default & ~CommonControls::Feature_RepaintOnF5 ),
-	m_cameraCtrl(&m_commonCtrl, CameraControls::Feature_All | CameraControls::Feature_StereoControls),
+	m_cameraCtrl(&m_commonCtrl, CameraControls::Feature_All),
 	m_action( Action_None ),
-	m_scale(1.0f),
+	m_scale(0.01f),
+	m_lastFrameTick(0.0f),
 	m_stateChange( false ),
 	m_visibleCameraControls(false)
 {
@@ -19,8 +20,9 @@ App::App( void ) :
 	m_window.addListener(&m_cameraCtrl);
 
 	m_commonCtrl.addSeparator();
-	m_commonCtrl.addButton((S32*)&m_action, Action_ToggleCameraCtrlVisibility, FW_KEY_F1, "Toggle visibility of camera controls");
-	m_commonCtrl.addSlider(&m_scale, 0.01f, 10.0f, true, FW_KEY_NONE, FW_KEY_NONE, "Scale meshes");
+	m_commonCtrl.addButton((S32*)&m_action, Action_ToggleCameraCtrlVisibility, FW_KEY_F2, "Toggle visibility of camera controls");
+	m_commonCtrl.addButton((S32*)&m_action, Action_EnableCamera, FW_KEY_F1, "Enable/Disable camera movements");
+	m_commonCtrl.addSlider(&m_scale, 0.0001f, 1.0f, true, FW_KEY_NONE, FW_KEY_NONE, "Scale meshes");
 	m_commonCtrl.addSeparator();
 	m_cameraCtrl.removeGUIControls();
 
@@ -36,26 +38,27 @@ void App::startUp()
 {
         m_assetManager = new AssetManager();
         m_assetManager->LoadAssets();
-
-        m_renderer = new Renderer();
-		m_renderer->startUp(m_window.getGL(), &m_cameraCtrl, m_assetManager);
-
-		m_positions.push_back(FW::Vec3f());
-		//m_positions.push_back(FW::Vec3f(1,1,0));
+		Renderer::get().startUp(m_window.getGL(), &m_cameraCtrl, m_assetManager);
+		m_system = new ParticleSystem();
+		m_timer = Timer();
+		m_timer.start();
 }
 
 
 void App::shutDown()
 {
-	if(m_renderer != nullptr)
-	{
-		m_renderer->shutDown();
-		delete m_renderer;
-	}
+	
+	Renderer::get().shutDown();
+
 	if(m_assetManager != nullptr)
 	{
 		m_assetManager->ReleaseAssets();
 		delete m_assetManager;
+	}
+
+	if(m_system != nullptr)
+	{
+		delete m_system;
 	}
 }
 
@@ -82,6 +85,11 @@ bool App::handleEvent( const Window::Event& event )
 		m_visibleCameraControls = !m_visibleCameraControls;
 		m_stateChange = true;
 		break;
+	
+	case Action_EnableCamera:
+		m_commonCtrl.message("Enable/Disable camera movements");
+		m_cameraCtrl.setEnableMovement(!m_cameraCtrl.getEnableMovement());
+		break;
 
 	default:
 		FW_ASSERT(false);
@@ -95,7 +103,11 @@ bool App::handleEvent( const Window::Event& event )
 	m_window.setVisible(true);
 	if (event.type == Window::EventType_Paint)
 	{
-		m_renderer->renderTest();
+		float tick = m_timer.getElapsed();
+		float dt = tick - m_lastFrameTick;
+		m_lastFrameTick = tick;
+		m_system->evalState(dt);
+		m_system->draw(m_scale);
 	}
 	m_window.repaint();
 

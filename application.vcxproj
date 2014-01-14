@@ -339,12 +339,15 @@
     <ClInclude Include="src\basis\App.hpp" />
     <ClInclude Include="src\basis\AssetManager.h" />
     <ClInclude Include="src\basis\HelpFunctions.h" />
-    <ClInclude Include="src\basis\Render.h" />
+    <ClInclude Include="src\basis\Integrator.h" />
+    <ClInclude Include="src\basis\Renderer.h" />
+    <ClInclude Include="src\basis\System.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\basis\App.cpp" />
     <ClCompile Include="src\basis\AssetManager.cpp" />
-    <ClCompile Include="src\basis\Render.cpp" />
+    <ClCompile Include="src\basis\Renderer.cpp" />
+    <ClCompile Include="src\basis\System.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

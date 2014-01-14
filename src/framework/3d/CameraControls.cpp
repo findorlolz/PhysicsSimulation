@@ -437,13 +437,10 @@ void CameraControls::removeGUIControls(void)
     cc.removeControl(&m_fov);
     cc.removeControl(&m_near);
     cc.removeControl(&m_far);
-    cc.removeControl(&m_enableStereo);
     cc.removeControl(&m_stereoSeparation);
     cc.removeControl(&m_stereoConvergence);
-	if (hasFeature(Feature_AlignYButton))
-        cc.removeControl(&m_alignY);
-    if (hasFeature(Feature_AlignZButton))
-        cc.removeControl(&m_alignZ);
+    cc.removeControl(&m_alignY);
+    cc.removeControl(&m_alignZ);
 }
 
 //------------------------------------------------------------------------
