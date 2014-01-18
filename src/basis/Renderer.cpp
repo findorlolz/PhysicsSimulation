@@ -8,6 +8,8 @@ void Renderer::startUp(FW::GLContext* gl, FW::CameraControls* camera, AssetManag
 		m_camera = camera;
 		m_projection = FW::Mat4f();
 		m_meshScale = FW::Mat4f();
+		m_camera->setPosition(FW::Vec3f(0.0f, 0.0f, 3.0f));
+		m_camera->setFar(5.0f);
 }
 
 void Renderer::shutDown()

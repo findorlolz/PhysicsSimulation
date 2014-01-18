@@ -7,34 +7,77 @@
 #include <vector>
 #include <base/Math.hpp>
 
-// http://stackoverflow.com/questions/2270726/how-to-determine-the-size-of-an-array-of-strings-in-c
-template <typename T, size_t N>
-char (&static_sizeof_array( T(&)[N] ))[N]; // declared, not defined
-#define SIZEOF_ARRAY( x ) sizeof(static_sizeof_array(x))
 
-// Axis must be unit length. Angle in radians.
-inline FW::Mat4f rotation4f( const FW::Vec3f& axis, float angle )
+inline static FW::Mat3f formBasis(const FW::Vec3f& n)
 {
-    FW::Mat3f R = FW::Mat3f::rotation(axis, angle);
-    // Copy to homogeneous matrix
-    FW::Mat4f H;
-    H.setIdentity();
-    for (unsigned i = 0; i < 3; ++i)
-        for (unsigned j = 0; j < 3; ++j)
-            H(i, j) = R(i, j);
-    return H;
+	FW::Vec3f q = n;
+	float qmin = FW::min(abs(q.x), abs(q.y));
+	qmin = FW::min(qmin, abs(q.z));
+
+	for(int i = 0 ; i < 3 ; i++)
+	{
+		if(abs(q[i]) == qmin)
+		{
+			q[i] = 1;
+		}
+	}
+	FW::Vec3f t = cross(q, n).normalized();
+	FW::Vec3f b = cross(n, t).normalized();
+
+	FW::Mat3f r;
+	r.setCol(0, t);
+	r.setCol(1, b);
+	r.setCol(2, n);
+
+	return r;
 }
 
-inline FW::Mat4f translation(const FW::Vec3f& t)
+static inline FW::Vec2f toUnitDisk(FW::Vec2f onSquare)
 {
-    FW::Mat4f M;
-    M.setIdentity();
-    M.setCol(3, t.toHomogeneous());
-    return M;
+	float phi, r,u,v;
+	float a = 2 *  onSquare.x-1;
+	float b = 2 *  onSquare.y-1;
+
+	if (a > -b)
+	{ // region 1 or 2
+		if (a > b)
+		{ // region 1, also |a| > |b|
+			r = a;
+			phi = (FW_PI/4 ) * (b/a);
+		}
+		else
+		{ // region 2, also |b| > |a|
+			r = b;
+			phi = (FW_PI/4) * (2 - (a/b));
+		}
+	}
+	else
+	{ // region 3 or 4
+		if (a < b)
+		{ // region 3, also |a| >= |b|, a != 0
+			r = -a;
+			phi = (FW_PI/4) * (4 + (b/a));
+		}
+		else
+		{ // region 4, |b| >= |a|, but a==0 and b==0 could occur.
+		r = -b;
+		if (b != 0)
+		{
+			phi = (FW_PI/4) * (6 - (a/b));
+		}
+		else{
+			phi = 0;
+		}
+		}
+	}
+
+
+	u = r * cos( phi );
+	v = r * sin( phi );
+	return FW::Vec2f(u,v);
 }
 
-
-inline FW::Mat4f makeMat4f( float m00, float m01, float m02, float m03,
+inline static FW::Mat4f makeMat4f( float m00, float m01, float m02, float m03,
                             float m10, float m11, float m12, float m13,
                             float m20, float m21, float m22, float m23,
                             float m30, float m31, float m32, float m33)

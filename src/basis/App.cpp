@@ -49,6 +49,7 @@ void App::shutDown()
 {
 	
 	Renderer::get().shutDown();
+	delete &EulerIntegrator::get();
 
 	if(m_assetManager != nullptr)
 	{
@@ -106,7 +107,7 @@ bool App::handleEvent( const Window::Event& event )
 		float tick = m_timer.getElapsed();
 		float dt = tick - m_lastFrameTick;
 		m_lastFrameTick = tick;
-		m_system->evalState(dt);
+		m_system->evalSystem(dt);
 		m_system->draw(m_scale);
 	}
 	m_window.repaint();

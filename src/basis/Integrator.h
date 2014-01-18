@@ -3,34 +3,7 @@
 #include <vector>
 #include "base/Math.hpp"
 
-
-struct State
-{
-	State(FW::Vec3f p, FW::Vec3f v, FW::Vec3f a) :
-		m_pos(p),
-		m_vec(v),
-		m_acc(a)
-	{}
-
-	FW::Vec3f m_pos;
-	FW::Vec3f m_vec;
-	FW::Vec3f m_acc;
-};
-
-class System;
-class ParticleSystem;
-
-/*
-State operator+(const State& a, const State& b)
-{
-	return State((a.m_pos + b.m_pos), (a.m_vec + b.m_pos), (a.m_acc + b.m_acc));
-}
-
-State operator*(const float d, const State s)
-{
-	return State(d*s.m_pos, d*s.m_vec, d*s.m_acc);
-}
-*/
+#include "Actor.h"
 
 class EulerIntegrator
 {
@@ -38,22 +11,10 @@ public:
 	EulerIntegrator() {}
     ~EulerIntegrator() {}
 
-	static EulerIntegrator& get()
-    {
-		static EulerIntegrator* gpSingleton = nullptr;
-		if (gpSingleton == nullptr)
-		{
-				gpSingleton = new EulerIntegrator();
-		}
-		FW_ASSERT(gpSingleton != nullptr && "Failed to create EulerIntegrator");
-		return *gpSingleton;
-    }
-
-	State eval(const float dt, const State current, System* system)
-    {
-		return system->evalFunc(current, dt);
-    }
+	static EulerIntegrator& get();
+	void evalIntegrator(const float dt, Actor*, std::vector<Actor*>&);
 };
+
 /*
 class Krunge_KuttaIntegrator: public Integrator {
 public:
