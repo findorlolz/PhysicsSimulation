@@ -1,8 +1,21 @@
-#include "Actor.h"
-#include "Renderer.h"
 #include "System.h"
-#include "base/Random.hpp"
 #include "Forces.h"
+#include "Renderer.h"
+
+template<typename System>
+void Particle<System>::draw(Renderer& renderer) {}
+
+template<>
+void Particle<ParticleSystem>::draw(Renderer& renderer)
+{ 
+	renderer.drawParticle(m_position);
+}
+
+template<>
+void Particle<BoidSystem>::draw(Renderer& renderer)
+{ 
+	renderer.drawParticle(m_position);
+}
 
 template<typename System>
 void Emitter<System>::evalF(const float, std::vector<Actor*>&) {}
@@ -44,6 +57,35 @@ void Particle<ParticleSystem>::evalF(const float dt, std::vector<Actor*>& actors
 	addToTimer(dt);
 	m_position += m_velocity * dt;
 	m_velocity += m_acceleration * dt;
-	m_acceleration = m_invertMass* (evalGravity(m_mass) + evalDrag(m_velocity, m_invertMass, 0.01f));
+	m_acceleration = m_invertMass* (evalGravity(m_mass) + evalDrag(m_velocity, 0.01f));
 }
 
+template<>
+void Particle<BoidSystem>::evalF(const float dt, std::vector<Actor*>& close)
+{
+	m_position += m_velocity * dt;
+	m_velocity = boidEvalSpeed((m_velocity + m_acceleration * dt), close);
+	m_acceleration = m_invertMass * (boidEvalCohersion(m_position, close, 0.001f) + boidEvalSepartion(m_position, close, 0.001f) + boidEvalToPointSpring(0.5f, 0.1f,m_position, FW::Vec3f()));
+}
+
+template<typename System>
+void Deflecter<System>::evalF(const float dt, std::vector<Actor*>& close) {}
+
+template<>
+void Deflecter<BoidSystem>::evalF(const float dt, std::vector<Actor*>& close)
+{
+	for(auto i : close)
+	{
+		if(i->getActorType() == ActorType_Particle)
+		{
+			Particle<System>* particle = (Particle<System>*) i;
+			FW::Vec3f particlePos = particle->getPos();
+			FW::Vec3f push = boidEvalFromPointSpring(m_range, m_k, particlePos, m_position);
+			float tmp = push.length();
+			FW::Vec3f pull = getVortexSpringDirection(particlePos, m_position, m_range);
+			pull = pull.normalized() * tmp;
+			FW::Vec3f a = particle->getInverseMass() * (0.2f*push + 0.8f*pull);
+			particle->setAcc(particle->getAcc() + a);
+		}
+	}
+}

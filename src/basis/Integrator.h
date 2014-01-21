@@ -3,7 +3,7 @@
 #include <vector>
 #include "base/Math.hpp"
 
-#include "Actor.h"
+class Actor;
 
 class EulerIntegrator
 {

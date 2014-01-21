@@ -3,6 +3,8 @@
 #include "gui/Window.hpp"
 #include "gui/CommonControls.hpp"
 #include "System.h"
+#include "Renderer.h"
+#include "Integrator.h"
 
 namespace FW
 {
@@ -15,7 +17,9 @@ private:
         Action_None,
 		Action_EnableCamera,
 		Action_ToggleCameraCtrlVisibility,
-    };
+		Action_StartParticleSystem,
+		Action_StartBoidSystem
+	};
 
 public:
 	App( void );
@@ -37,6 +41,7 @@ private:
 	bool m_visibleCameraControls;
 	bool m_stateChange;
 	float m_scale;
+	float m_stepSize;
 	float m_lastFrameTick;
 
 	Action m_action;
@@ -44,7 +49,6 @@ private:
 
 	System* m_system;
 	FW::Timer m_timer;
-
 };
 
 }

@@ -1,6 +1,9 @@
 #pragma once
 
-#include "Integrator.h"
+#include "base/Random.hpp"
+#include <vector>
+
+class Actor;
 
 class System
 {
@@ -12,8 +15,8 @@ public:
 			delete i;
 	}
 
-	virtual void evalSystem(const float) {}
-	virtual void draw(const float) {}
+	virtual void evalSystem(const float);
+	virtual void draw(const float);
 
 protected:
 	std::vector<Actor*> m_actors;
@@ -23,16 +26,19 @@ protected:
 class ParticleSystem : public System
 {
 public:
-	ParticleSystem() : 
-		System()
-	{
-		m_emitter = new Emitter<ParticleSystem>(FW::Vec3f(1,0,0),FW::Vec3f(0,0,0), FW::Vec3f(0,0,1), 2.0f, 3.0f, 0.0005f, 0.10f, 0.5f);
-	}
+	ParticleSystem();
 	virtual ~ParticleSystem() {}
+};
 
-	virtual void evalSystem(const float dt);
-	virtual void draw(const float scale);
+class BoidSystem : public System
+{
+public:
+	BoidSystem(const float, const size_t);
+	virtual ~BoidSystem() {}
+	virtual void evalSystem(const float);
 
 private:
-	Emitter<ParticleSystem>* m_emitter;
+	std::vector<Actor*> m_closeBuffer;
+	float m_closeDistance;
+	size_t m_numberOfParticles;
 };

@@ -8,7 +8,9 @@ App::App( void ) :
 	m_cameraCtrl(&m_commonCtrl, CameraControls::Feature_All),
 	m_action( Action_None ),
 	m_scale(0.01f),
+	m_stepSize(0.111f),
 	m_lastFrameTick(0.0f),
+	m_system(nullptr),
 	m_stateChange( false ),
 	m_visibleCameraControls(false)
 {
@@ -22,15 +24,19 @@ App::App( void ) :
 	m_commonCtrl.addSeparator();
 	m_commonCtrl.addButton((S32*)&m_action, Action_ToggleCameraCtrlVisibility, FW_KEY_F2, "Toggle visibility of camera controls");
 	m_commonCtrl.addButton((S32*)&m_action, Action_EnableCamera, FW_KEY_F1, "Enable/Disable camera movements");
-	m_commonCtrl.addSlider(&m_scale, 0.0001f, 1.0f, true, FW_KEY_NONE, FW_KEY_NONE, "Scale meshes");
 	m_commonCtrl.addSeparator();
+	m_commonCtrl.addButton((S32*)&m_action, Action_StartParticleSystem, FW_KEY_1, "Create new particles system" );
+	m_commonCtrl.addButton((S32*)&m_action, Action_StartBoidSystem, FW_KEY_2, "Create new boid system" );
+	m_commonCtrl.beginSliderStack();
+	m_commonCtrl.addSlider(&m_scale, 0.0001f, 1.0f, true, FW_KEY_NONE, FW_KEY_NONE, "Scale meshes");
+	m_commonCtrl.addSlider(&m_stepSize, 0.0001f, 1.0f, true, FW_KEY_NONE, FW_KEY_NONE, "Step size = %f ");
+	m_commonCtrl.endSliderStack();
 	m_cameraCtrl.removeGUIControls();
 
 	FW::GLContext::Config conf = m_window.getGLConfig();
 	conf.numSamples = 4;
 	m_window.setGLConfig(conf);
 	m_window.getGL()->swapBuffers();
-
 	startUp();
 }
 
@@ -39,9 +45,7 @@ void App::startUp()
         m_assetManager = new AssetManager();
         m_assetManager->LoadAssets();
 		Renderer::get().startUp(m_window.getGL(), &m_cameraCtrl, m_assetManager);
-		m_system = new ParticleSystem();
 		m_timer = Timer();
-		m_timer.start();
 }
 
 
@@ -92,6 +96,22 @@ bool App::handleEvent( const Window::Event& event )
 		m_cameraCtrl.setEnableMovement(!m_cameraCtrl.getEnableMovement());
 		break;
 
+	case Action_StartParticleSystem:
+		if(m_system != nullptr)
+			delete m_system;
+		m_system = new ParticleSystem();
+		m_timer.clearTotal();
+		m_lastFrameTick = 0.0f;
+		break;
+
+	case Action_StartBoidSystem:
+		if(m_system != nullptr)
+			delete m_system;
+		m_system = new BoidSystem(0.2f, 100);
+		m_timer.clearTotal();
+		m_lastFrameTick = 0.0f;
+		break;
+
 	default:
 		FW_ASSERT(false);
 		break;
@@ -99,19 +119,25 @@ bool App::handleEvent( const Window::Event& event )
 
 	if(m_stateChange)
 		updateAppState();
-	
+
+	float tick = m_timer.getElapsed();
+	float dt = tick - m_lastFrameTick;
+	if(dt >= m_stepSize && m_system != nullptr)
+	{
+		m_lastFrameTick = tick;
+		m_system->evalSystem(dt);
+	}
 
 	m_window.setVisible(true);
 	if (event.type == Window::EventType_Paint)
 	{
-		float tick = m_timer.getElapsed();
-		float dt = tick - m_lastFrameTick;
-		m_lastFrameTick = tick;
-		m_system->evalSystem(dt);
-		m_system->draw(m_scale);
+		if(m_system != nullptr)
+		{
+			m_system->draw(m_scale);
+		}
 	}
-	m_window.repaint();
 
+	m_window.repaint();
 	return false;
 }
 

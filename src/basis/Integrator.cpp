@@ -1,5 +1,5 @@
 #include "Integrator.h"
-#include "System.h"
+#include "Actor.h"
 
 
 EulerIntegrator& EulerIntegrator::get()

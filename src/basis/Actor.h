@@ -3,21 +3,34 @@
 #include "base/Math.hpp"
 #include "base/Random.hpp"
 #include "HelpFunctions.h"
-#include "Renderer.h"
 #include <vector>
 
+enum ActorType
+{
+	ActorType_Emitter,
+	ActorType_Particle,
+	ActorType_Deflecter
+};
+
 class System;
+class Renderer;
 
 class Actor
 {
 public:
-	Actor() {}
+	Actor(ActorType type) :
+	m_type(type)
+	{}
 	virtual ~Actor() {}
 
+	virtual ActorType getActorType() const { return m_type; }
 	virtual void evalF(const float, std::vector<Actor*>&) {}
 	virtual FW::Vec3f getPos() const { return FW::Vec3f(); }
 	virtual bool isDone() const { return false; }
 	virtual void draw(Renderer&) {}
+
+protected:
+	ActorType m_type;
 };
 
 template<typename System>
@@ -31,7 +44,8 @@ public:
 		m_velocity(v),
 		m_acceleration(0.0f),
 		m_duration(duration),
-		m_timeElapsed(0.0f)
+		m_timeElapsed(0.0f),
+		Actor(ActorType_Particle)
 	{}
 	~Particle() {}
 
@@ -43,12 +57,12 @@ public:
 	float getTimeElapset() const {return m_timeElapsed; }
 	float getInverseMass()  const { return m_invertMass; }
 
-	void setState(const FW::Vec3f& p, const FW::Vec3f& v, const FW::Vec3f& a) { m_position = p; m_velocity = v; m_acceleration = a; }
-	void addToTimer(const float d) { m_timeElapsed += d;}
+	void setAcc(const FW::Vec3f a) { m_acceleration = a; }
+	void addToTimer(const float d) { m_timeElapsed += d; }
 	
 	virtual bool isDone() const { return (m_timeElapsed > m_duration); }
-	virtual void evalFunc(const float, std::vector<Actor*>&);
-	virtual void draw(Renderer& renderer) { renderer.drawParticle(m_position); }
+	virtual void evalF(const float, std::vector<Actor*>&);
+	virtual void draw(Renderer& renderer);
 
 private:
 	FW::Vec3f m_acceleration;
@@ -74,7 +88,8 @@ public:
 		m_timeBetween(timeBetweenParticles),
 		m_particleMass(particleMass),
 		m_particleDuration(particleDuration),
-		m_previousTick(0.0f)
+		m_previousTick(0.0f),
+		Actor(ActorType_Emitter)
 	{
 		m_normal = FW::cross((m_posB - m_posA), (m_posC - m_posA));
 		m_normal = m_normal.normalized();
@@ -84,8 +99,8 @@ public:
 	~Emitter() 
 	{
 	}
-	
-	void evalF(const float, std::vector<Actor*>&);
+
+	virtual void evalF(const float, std::vector<Actor*>&);
 
 private:
 	FW::Random m_randomGen;
@@ -100,4 +115,22 @@ private:
 	float m_maxSpeed;
 	float m_particleMass;
 	float m_particleDuration;
+};
+
+template<typename System>
+class Deflecter : public Actor
+{
+public:
+	Deflecter(const FW::Vec3f pos, const float range, const float k) :
+		m_position(pos),
+		Actor(ActorType_Deflecter)
+	{}
+	virtual ~Deflecter() {}
+
+	virtual void evalF(const float, std::vector<Actor*>&);
+
+private:
+	FW::Vec3f m_position;
+	float m_range;
+	float m_k;
 };

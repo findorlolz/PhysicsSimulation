@@ -1,32 +1,86 @@
 #include "System.h"
+#include "Integrator.h"
+#include "Actor.h"
+#include "Renderer.h"
 
-void ParticleSystem::evalSystem(const float dt)
+ParticleSystem::ParticleSystem() :
+	System()
+{
+	m_actors.push_back(new Emitter<ParticleSystem>(FW::Vec3f(1,0,0),FW::Vec3f(0,0,0), FW::Vec3f(0,0,1), 2.0f, 3.0f, 0.0005f, 0.10f, 0.5f));
+	size_t numberOfParticles = 0.5f/0.0005f;
+	m_actors.push_back(new Deflecter<BoidSystem>(FW::Vec3f(0.0f,0.0f,0.0f), .5, 10.0f)); 
+	m_actors.reserve(numberOfParticles);
+}
+
+BoidSystem::BoidSystem(const float closeDistance, const size_t numOfParticles) :
+	System(),
+	m_closeDistance(closeDistance),
+	m_numberOfParticles(numOfParticles)
+{
+	FW::Random rnd = FW::Random();
+	for(auto i = 0u; i < m_numberOfParticles; ++i)
+	{
+		const FW::Vec3f pos = rnd.getVec3f(-1.0f,1.0f);
+		const FW::Vec3f vel = rnd.getVec3f(-0.1f, 0.1f);
+		m_actors.push_back(new Particle<BoidSystem>(1.0f, pos, vel, 1.0f));
+	}
+	m_actors.push_back(new Deflecter<BoidSystem>(FW::Vec3f(0.7f,0.0f,0.0f), .5, 10.0f)); 
+	m_closeBuffer.reserve(m_numberOfParticles);
+}
+
+void System::evalSystem(const float dt)
 {
 	EulerIntegrator integrator = EulerIntegrator::get();
-	m_emitter->evalF(dt, m_actors);
-	auto i = m_actors.begin();
-	while(i != m_actors.end())
+	for(auto i = 0u; i < m_actors.size(); ++i)
 	{
-		if((*i)->isDone())
+		auto actor = m_actors[i];
+		if(actor->isDone())
 		{
-			Actor* a = *i;
-			i = m_actors.erase(i);
+			Actor* a = actor;
+			auto iter = std::next(m_actors.begin(), i);
+			m_actors.erase(iter);
 			delete a;
 		}
 		else
 		{
-			integrator.evalIntegrator(dt, *i, m_actors);
-			++i;
+			integrator.evalIntegrator(dt, actor, m_actors);
 		}
 	}
 }
-//Test
 
-void ParticleSystem::draw(const float scale)
+void System::draw(const float scale)
 {
 	Renderer renderer = Renderer::get();
 	renderer.startFrame(scale);
 	for(auto i : m_actors)
 		i->draw(renderer);
 	renderer.endFrame();
+}
+
+void BoidSystem::evalSystem(const float dt)
+{
+	EulerIntegrator integrator = EulerIntegrator::get();
+	for(auto i = 0u; i < m_actors.size(); ++i)
+	{
+		auto actor = m_actors[i];
+		if(actor->isDone())
+		{
+			Actor* a = actor;
+			auto iter = std::next(m_actors.begin(), i);
+			m_actors.erase(iter);
+			delete a;
+		}
+		else
+		{
+			m_closeBuffer.clear();
+			for(auto j = 0u; j < m_actors.size(); ++j)
+			{
+				auto close = m_actors[j];
+				float d = (actor->getPos() - close->getPos()).length();
+				if(close != actor && d <= m_closeDistance)
+					m_closeBuffer.push_back(close);
+			}
+			integrator.evalIntegrator(dt, actor, m_closeBuffer);
+		}
+	}
 }

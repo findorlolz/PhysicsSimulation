@@ -37,9 +37,9 @@ void Renderer::endFrame()
 
 void Renderer::drawParticle(const FW::Vec3f pos)
 {
-	FW::Mat4f toCamera = FW::Mat4f::translate(pos);
-	MeshType meshType = MeshType_Sphere;					
-	FW::MeshBase* mesh = m_assetManager->getMesh(meshType);
+
+	FW::Mat4f toCamera = FW::Mat4f::translate(pos);					
+	FW::MeshBase* mesh = m_assetManager->getMesh(MeshType_Sphere);
 	mesh->draw(m_context, m_worldToCamera * toCamera * m_meshScale, m_projection);
 }
 
