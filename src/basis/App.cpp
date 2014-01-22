@@ -121,11 +121,21 @@ bool App::handleEvent( const Window::Event& event )
 		updateAppState();
 
 	float tick = m_timer.getElapsed();
+	float maxStep = 1.2f * m_stepSize;
 	float dt = tick - m_lastFrameTick;
-	if(dt >= m_stepSize && m_system != nullptr)
+	if(m_system != nullptr)
 	{
-		m_lastFrameTick = tick;
-		m_system->evalSystem(dt);
+		while(dt > maxStep)
+		{
+			m_system->evalSystem(m_stepSize);
+			dt -= m_stepSize;
+			m_lastFrameTick += m_stepSize;
+		}
+		if(dt > m_stepSize)
+		{
+			m_lastFrameTick = tick;
+			m_system->evalSystem(dt);
+		}
 	}
 
 	m_window.setVisible(true);

@@ -6,7 +6,7 @@
 ParticleSystem::ParticleSystem() :
 	System()
 {
-	m_actors.push_back(new Emitter<ParticleSystem>(FW::Vec3f(1,0,0),FW::Vec3f(0,0,0), FW::Vec3f(0,0,1), 2.0f, 3.0f, 0.0005f, 0.10f, 0.5f));
+	m_actors.push_back(new TraingleEmitter<ParticleSystem>(FW::Vec3f(1,0,0),FW::Vec3f(0,0,0), FW::Vec3f(0,0,1), 2.0f, 3.0f, 0.0005f, 0.10f, 0.5f));
 	size_t numberOfParticles = 0.5f/0.0005f;
 	m_actors.push_back(new Deflecter<BoidSystem>(FW::Vec3f(0.0f,0.0f,0.0f), .5, 10.0f)); 
 	m_actors.reserve(numberOfParticles);

@@ -75,10 +75,10 @@ private:
 };
 
 template<typename System>
-class Emitter : public Actor
+class TraingleEmitter : public Actor
 {
 public:
-	Emitter(const FW::Vec3f& posa, const FW::Vec3f& posb, const FW::Vec3f& posc, const float minSpeed,
+	TraingleEmitter(const FW::Vec3f& posa, const FW::Vec3f& posb, const FW::Vec3f& posc, const float minSpeed,
 		const float maxSpeed, const float timeBetweenParticles, const float particleMass, const float particleDuration) :
 		m_posA(posa),
 		m_posB(posb),
@@ -96,7 +96,7 @@ public:
 		m_formBasis = formBasis(m_normal);
 		m_randomGen = FW::Random();
 	}
-	~Emitter() 
+	~TraingleEmitter() 
 	{
 	}
 

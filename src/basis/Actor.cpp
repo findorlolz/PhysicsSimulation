@@ -18,10 +18,10 @@ void Particle<BoidSystem>::draw(Renderer& renderer)
 }
 
 template<typename System>
-void Emitter<System>::evalF(const float, std::vector<Actor*>&) {}
+void TraingleEmitter<System>::evalF(const float, std::vector<Actor*>&) {}
 
 template<>
-void Emitter<ParticleSystem>::evalF(const float dt, std::vector<Actor*>& actors)
+void TraingleEmitter<ParticleSystem>::evalF(const float dt, std::vector<Actor*>& actors)
 {
 	
 	float tmp = dt + m_previousTick;
