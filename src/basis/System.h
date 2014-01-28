@@ -9,11 +9,7 @@ class System
 {
 public:
 	System() {}
-	virtual ~System() 
-	{
-		for(auto i : m_actors)
-			delete i;
-	}
+	virtual ~System();
 
 	virtual void evalSystem(const float);
 	virtual void draw(const float);

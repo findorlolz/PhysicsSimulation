@@ -11,6 +11,7 @@ enum MeshType
 {
         MeshType_Pyramid,
 		MeshType_Sphere,
+		MeshType_Axis,
 
         MeshType_Count
 };

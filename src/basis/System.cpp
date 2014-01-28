@@ -3,12 +3,17 @@
 #include "Actor.h"
 #include "Renderer.h"
 
+System::~System() 
+{
+	for(auto i : m_actors)
+		delete i;
+}
+
 ParticleSystem::ParticleSystem() :
 	System()
 {
-	m_actors.push_back(new TraingleEmitter<ParticleSystem>(FW::Vec3f(1,0,0),FW::Vec3f(0,0,0), FW::Vec3f(0,0,1), 2.0f, 3.0f, 0.0005f, 0.10f, 0.5f));
+	m_actors.push_back(new TraingleEmitter<ParticleSystem>(FW::Vec3f(1,0,0),FW::Vec3f(0,0,0), FW::Vec3f(0,0,1), 4.0f, 6.0f, 0.03f, 1.0f, 2.0f));
 	size_t numberOfParticles = 0.5f/0.0005f;
-	m_actors.push_back(new Deflecter<BoidSystem>(FW::Vec3f(0.0f,0.0f,0.0f), .5, 10.0f)); 
 	m_actors.reserve(numberOfParticles);
 }
 
@@ -21,10 +26,10 @@ BoidSystem::BoidSystem(const float closeDistance, const size_t numOfParticles) :
 	for(auto i = 0u; i < m_numberOfParticles; ++i)
 	{
 		const FW::Vec3f pos = rnd.getVec3f(-1.0f,1.0f);
-		const FW::Vec3f vel = rnd.getVec3f(-0.1f, 0.1f);
+		const FW::Vec3f vel = rnd.getVec3f(-0.5f, 0.5f);
 		m_actors.push_back(new Particle<BoidSystem>(1.0f, pos, vel, 1.0f));
 	}
-	m_actors.push_back(new Deflecter<BoidSystem>(FW::Vec3f(0.7f,0.0f,0.0f), .5, 10.0f)); 
+	//m_actors.push_back(new Deflecter<BoidSystem>(FW::Vec3f(0.7f,0.0f,0.0f), .5, 10.0f)); 
 	m_closeBuffer.reserve(m_numberOfParticles);
 }
 
@@ -76,7 +81,7 @@ void BoidSystem::evalSystem(const float dt)
 			for(auto j = 0u; j < m_actors.size(); ++j)
 			{
 				auto close = m_actors[j];
-				float d = (actor->getPos() - close->getPos()).length();
+				float d = (actor->getState().pos - close->getState().pos).length();
 				if(close != actor && d <= m_closeDistance)
 					m_closeBuffer.push_back(close);
 			}

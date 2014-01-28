@@ -18,7 +18,8 @@ private:
 		Action_EnableCamera,
 		Action_ToggleCameraCtrlVisibility,
 		Action_StartParticleSystem,
-		Action_StartBoidSystem
+		Action_StartBoidSystem,
+		Action_ToggleAxis
 	};
 
 public:

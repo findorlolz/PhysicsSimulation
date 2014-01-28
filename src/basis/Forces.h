@@ -3,6 +3,7 @@
 #include "Actor.h"
 
 static const FW::Vec3f gAcc = FW::Vec3f(0.0f, -9.81f, 0.0f);
+static const FW::Vec3f origin = FW::Vec3f();
 
 inline static FW::Vec3f evalGravity(const float mass) 
 {
@@ -34,7 +35,7 @@ inline static FW::Vec3f boidEvalToPointSpring(const float dist0, const float k, 
 	if(tmp < 0.0f)
 		return springForce;
 	
-	springForce = (-k * (tmp*tmp)) * d.normalized();  
+	springForce = -k * tmp * d.normalized();  
     return springForce;
 }
 
@@ -47,8 +48,20 @@ inline static FW::Vec3f boidEvalFromPointSpring(const float dist0, const float k
 	if(tmp > 0.0f)
 		return springForce;
 	
-	springForce = (-k * (tmp*tmp)) * d.normalized();  
+	springForce = (-k * tmp) * d.normalized();  
     return springForce;
+}
+
+inline static FW::Vec3f boidEvalToPointStatic(const float dist0, const float k, const FW::Vec3f& node, const FW::Vec3f& neighbor)
+{
+	FW::Vec3f f;
+	FW::Vec3f d = node - neighbor;
+	float tmp = d.length() - dist0;
+	if(tmp <= 0.0f)
+		return f;
+	f = -1.0f*k*d.normalized();
+	return f;
+
 }
 
 inline static FW::Vec3f boidEvalCohersion(const FW::Vec3f& node, const std::vector<Actor*>& neighbors, const float k)

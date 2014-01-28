@@ -7,8 +7,8 @@ App::App( void ) :
 	m_commonCtrl( CommonControls::Feature_Default & ~CommonControls::Feature_RepaintOnF5 ),
 	m_cameraCtrl(&m_commonCtrl, CameraControls::Feature_All),
 	m_action( Action_None ),
-	m_scale(0.01f),
-	m_stepSize(0.111f),
+	m_scale(0.03f),
+	m_stepSize(0.01667f),
 	m_lastFrameTick(0.0f),
 	m_system(nullptr),
 	m_stateChange( false ),
@@ -24,6 +24,7 @@ App::App( void ) :
 	m_commonCtrl.addSeparator();
 	m_commonCtrl.addButton((S32*)&m_action, Action_ToggleCameraCtrlVisibility, FW_KEY_F2, "Toggle visibility of camera controls");
 	m_commonCtrl.addButton((S32*)&m_action, Action_EnableCamera, FW_KEY_F1, "Enable/Disable camera movements");
+	m_commonCtrl.addButton((S32*)&m_action, Action_ToggleAxis, FW_KEY_F3, "Tpggle visibility of axis");
 	m_commonCtrl.addSeparator();
 	m_commonCtrl.addButton((S32*)&m_action, Action_StartParticleSystem, FW_KEY_1, "Create new particles system" );
 	m_commonCtrl.addButton((S32*)&m_action, Action_StartBoidSystem, FW_KEY_2, "Create new boid system" );
@@ -44,7 +45,7 @@ void App::startUp()
 {
         m_assetManager = new AssetManager();
         m_assetManager->LoadAssets();
-		Renderer::get().startUp(m_window.getGL(), &m_cameraCtrl, m_assetManager);
+		Renderer::get().startUp(m_window.getGL(), &m_cameraCtrl, m_assetManager, true);
 		m_timer = Timer();
 }
 
@@ -94,6 +95,11 @@ bool App::handleEvent( const Window::Event& event )
 	case Action_EnableCamera:
 		m_commonCtrl.message("Enable/Disable camera movements");
 		m_cameraCtrl.setEnableMovement(!m_cameraCtrl.getEnableMovement());
+		break;
+
+	case Action_ToggleAxis:
+		m_commonCtrl.message("Toggle visibility of axis");
+		Renderer::get().toggleAxis();
 		break;
 
 	case Action_StartParticleSystem:

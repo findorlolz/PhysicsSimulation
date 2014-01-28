@@ -20,13 +20,17 @@ public:
                 return *gpSingleton;
         }
 
-		void startUp(FW::GLContext*, FW::CameraControls*, AssetManager*);
+		void startUp(FW::GLContext*, FW::CameraControls*, AssetManager*, bool);
         void shutDown();
 
 		void startFrame(const float );
 		void endFrame();
-		void drawParticle(const FW::Vec3f); 
-		void renderTest(const float);
+		
+		void toggleAxis() { m_drawAxis = !m_drawAxis; }
+
+		void drawParticle(const FW::Vec3f);
+		void drawPyramid(const FW::Vec3f pos);
+
 private:
 		FW::Mat4f m_projection;
 		FW::Mat4f m_worldToCamera;
@@ -35,5 +39,6 @@ private:
 		FW::CameraControls* m_camera;
         AssetManager* m_assetManager;
         FW::GLContext::Program* m_shader;
+		bool m_drawAxis;
 
 };
