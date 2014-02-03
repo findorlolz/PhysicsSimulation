@@ -30,8 +30,11 @@ public:
 
 		void drawParticle(const FW::Vec3f);
 		void drawPyramid(const FW::Vec3f pos);
+		void drawTriangleToCamera(const FW::Vec3f&, const FW::Vec4f&);
+		void drawTriangleToCameraTest(const FW::Vec3f&);
 
 private:
+		FW::Mesh<FW::VertexPNC> m_dynamicMesh;
 		FW::Mat4f m_projection;
 		FW::Mat4f m_worldToCamera;
 		FW::Mat4f m_meshScale;
@@ -39,6 +42,7 @@ private:
 		FW::CameraControls* m_camera;
         AssetManager* m_assetManager;
         FW::GLContext::Program* m_shader;
+		float m_scale;
 		bool m_drawAxis;
 
 };

@@ -55,6 +55,7 @@ void App::shutDown()
 	
 	Renderer::get().shutDown();
 	delete &EulerIntegrator::get();
+	delete &Runge_KuttaIntegrator::get();
 
 	if(m_assetManager != nullptr)
 	{
@@ -106,7 +107,7 @@ bool App::handleEvent( const Window::Event& event )
 		if(m_system != nullptr)
 			delete m_system;
 		m_system = new ParticleSystem();
-		m_timer.clearTotal();
+		m_timer = Timer();
 		m_lastFrameTick = 0.0f;
 		break;
 
@@ -114,7 +115,7 @@ bool App::handleEvent( const Window::Event& event )
 		if(m_system != nullptr)
 			delete m_system;
 		m_system = new BoidSystem(0.2f, 100);
-		m_timer.clearTotal();
+		m_timer = Timer();
 		m_lastFrameTick = 0.0f;
 		break;
 

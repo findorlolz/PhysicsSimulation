@@ -12,9 +12,7 @@ System::~System()
 ParticleSystem::ParticleSystem() :
 	System()
 {
-	m_actors.push_back(new TraingleEmitter<ParticleSystem>(FW::Vec3f(1,0,0),FW::Vec3f(0,0,0), FW::Vec3f(0,0,1), 4.0f, 6.0f, 0.03f, 1.0f, 2.0f));
-	size_t numberOfParticles = 0.5f/0.0005f;
-	m_actors.reserve(numberOfParticles);
+	m_actors.push_back(new TraingleEmitter<ParticleSystem>(FW::Vec3f(1,0,0),FW::Vec3f(0,0,0), FW::Vec3f(0,0,1), 4.0f, 6.0f, 0.2f, 1.0f, 4.0f));
 }
 
 BoidSystem::BoidSystem(const float closeDistance, const size_t numOfParticles) :
@@ -35,7 +33,8 @@ BoidSystem::BoidSystem(const float closeDistance, const size_t numOfParticles) :
 
 void System::evalSystem(const float dt)
 {
-	EulerIntegrator integrator = EulerIntegrator::get();
+	EulerIntegrator eulerIntegrator = EulerIntegrator::get();
+	Runge_KuttaIntegrator rkIntegrator = Runge_KuttaIntegrator::get();
 	for(auto i = 0u; i < m_actors.size(); ++i)
 	{
 		auto actor = m_actors[i];
@@ -48,7 +47,10 @@ void System::evalSystem(const float dt)
 		}
 		else
 		{
-			integrator.evalIntegrator(dt, actor, m_actors);
+			if(actor->getActorType() == ActorType_Particle)
+				rkIntegrator.evalIntegrator(dt, actor, m_actors);
+			else
+				eulerIntegrator.evalIntegrator(dt, actor, m_actors);
 		}
 	}
 }
@@ -58,7 +60,9 @@ void System::draw(const float scale)
 	Renderer renderer = Renderer::get();
 	renderer.startFrame(scale);
 	for(auto i : m_actors)
+	{
 		i->draw(renderer);
+	}
 	renderer.endFrame();
 }
 

@@ -4,10 +4,10 @@
 #include "Integrator.h"
 
 template<typename System>
-State TraingleEmitter<System>::evalF(const float, const State&,std::vector<Actor*>&) {}
+StateEval TraingleEmitter<System>::evalF(const float, const State&,std::vector<Actor*>&) {}
 
 template<>
-State TraingleEmitter<ParticleSystem>::evalF(const float dt, const State&, std::vector<Actor*>& actors)
+StateEval TraingleEmitter<ParticleSystem>::evalF(const float dt, const State&, std::vector<Actor*>& actors)
 {
 	
 	float tmp = dt + m_previousTick;
@@ -25,41 +25,40 @@ State TraingleEmitter<ParticleSystem>::evalF(const float dt, const State&, std::
 		FW::Vec3f v = r3 * (m_formBasis*rndToUnitHalfSphere);	
 
 		Actor* particle = new ParticleEmitter<ParticleSystem>(m_particleMass,p,v,m_lifetimeOfParticles, m_lifetimeOfParticles * 0.5f, m_timeBetween, m_minSpeed, m_maxSpeed);
+		//Actor* particle = new Particle<ParticleSystem>(m_particleMass,p,v,m_lifetimeOfParticles);
 		actors.push_back(particle);
 		tmp -= m_timeBetween;
 	}
 	m_previousTick = tmp;
-	return m_state;
+	return StateEval();
 }
 
 template<typename System>
-State Particle<System>::evalF(const float, const State&,std::vector<Actor*>&) {}
+StateEval Particle<System>::evalF(const float, const State&,std::vector<Actor*>&) {}
 
 template<>
-State Particle<ParticleSystem>::evalF(const float dt, const State& current, std::vector<Actor*>&)
+StateEval Particle<ParticleSystem>::evalF(const float dt, const State& current, std::vector<Actor*>&)
 {
-	State next = State();
-	next.pos = current.pos + current.vel * dt;
-	next.vel = current.vel + current.acc * dt;
-	next.acc = m_invertMass* (evalGravity(m_mass) + evalDrag(current.vel, 1.0f));
+	StateEval next = StateEval();
+	next.dx = current.vel * dt;
+	next.dv = (m_invertMass* (evalGravity(m_mass) + evalDrag(current.vel, 1.0f))) * dt;
 	return next;
 }
 
 template<>
-State Particle<BoidSystem>::evalF(const float dt, const State& current, std::vector<Actor*>& close)
+StateEval Particle<BoidSystem>::evalF(const float dt, const State& current, std::vector<Actor*>& close)
 {
-	State next = State();
-	next.pos = current.pos + current.vel * dt;
-	next.vel = boidEvalSpeed((current.vel + current.acc * dt), close);
-	next.acc = m_invertMass * (boidEvalCohersion(current.pos, close, 0.01f) + boidEvalSepartion(current.pos, close, 0.01f) + boidEvalToPointStatic(2.0f, 10.0f, current.pos, origin));
+	StateEval next = StateEval();
+	//next.dv = boidEvalSpeed((current.vel + current.acc * dt), close) - current.vel;
+	next.dx = m_invertMass * (boidEvalCohersion(current.pos, close, 0.01f) + boidEvalSepartion(current.pos, close, 0.01f) + boidEvalToPointStatic(2.0f, 10.0f, current.pos, origin));
 	return next;
 }
 
 template<typename System>
-State ParticleEmitter<System>::evalF(const float, const State&, std::vector<Actor*>&) {}
+StateEval ParticleEmitter<System>::evalF(const float, const State&, std::vector<Actor*>&) {}
 
 template<>
-State ParticleEmitter<ParticleSystem>::evalF(const float dt, const State&, std::vector<Actor*>& actors)
+StateEval ParticleEmitter<ParticleSystem>::evalF(const float dt, const State&, std::vector<Actor*>& actors)
 {
 	float tmp = dt + m_previousTick;
 	while(tmp >= m_timeBetween)
@@ -77,17 +76,17 @@ State ParticleEmitter<ParticleSystem>::evalF(const float dt, const State&, std::
 		tmp -= m_timeBetween;
 	}
 	m_previousTick = tmp;
-	EulerIntegrator integrator = EulerIntegrator::get();
+	Runge_KuttaIntegrator integrator = Runge_KuttaIntegrator::get();
 	integrator.evalIntegrator(dt, m_carrier, actors);
-	
-	return m_carrier->getState();
+	m_state = m_carrier->getState();
+	return StateEval();
 }
 
 template<typename System>
-State Deflecter<System>::evalF(const float, const State&,std::vector<Actor*>&) {}
+StateEval Deflecter<System>::evalF(const float, const State&,std::vector<Actor*>&) {}
 
 template<>
-State Deflecter<BoidSystem>::evalF(const float, const State&,std::vector<Actor*>& close)
+StateEval Deflecter<BoidSystem>::evalF(const float, const State&,std::vector<Actor*>& close)
 {
 	for(auto i : close)
 	{
@@ -100,8 +99,8 @@ State Deflecter<BoidSystem>::evalF(const float, const State&,std::vector<Actor*>
 			FW::Vec3f pull = getVortexSpringDirection(particlePos, m_state.pos, m_range);
 			pull = pull.normalized() * tmp;
 			FW::Vec3f a = particle->getInverseMass() * (0.2f*push + 0.8f*pull);
-			particle->setAcc(particle->getState().acc + a);
+			//particle->setAcc(particle->getState().acc + a);
 		}
 	}
-	return m_state;
+	return StateEval();
 }
