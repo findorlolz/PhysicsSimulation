@@ -35,22 +35,47 @@ void System::evalSystem(const float dt)
 {
 	EulerIntegrator eulerIntegrator = EulerIntegrator::get();
 	Runge_KuttaIntegrator rkIntegrator = Runge_KuttaIntegrator::get();
-	for(auto i = 0u; i < m_actors.size(); ++i)
+	int deleteBufferIndex = -1;
+	int createBufferIndex = -1;
+	#pragma omp parallel for firstprivate(deleteBufferIndex, createBufferIndex) 
+	for(int i = 0u; i < m_actors.size(); ++i)
 	{
 		auto actor = m_actors[i];
 		if(actor->isDone())
 		{
-			Actor* a = actor;
-			auto iter = std::next(m_actors.begin(), i);
-			m_actors.erase(iter);
-			delete a;
+			deleteBufferIndex++;
+			m_deleteBuffer[deleteBufferIndex] = i;
 		}
 		else
 		{
 			if(actor->getActorType() == ActorType_Particle)
-				rkIntegrator.evalIntegrator(dt, actor, m_actors);
+				rkIntegrator.evalIntegrator(dt, actor, createtmp);
 			else
-				eulerIntegrator.evalIntegrator(dt, actor, m_actors);
+				eulerIntegrator.evalIntegrator(dt, actor, createtmp);
+			if(!createtmp.empty())
+			{	
+				createBufferIndex++;
+				m_createBuffer[createBufferIndex]  = createtmp.back();
+			}
+		}
+	}
+
+	#pragma omp critical
+	{
+		while(deleteBufferIndex >= 0)
+		{
+			int index = m_deleteBuffer[deleteBufferIndex];
+			Actor* a = m_actors[index];
+			auto iter = std::next(m_actors.begin(), index);
+			m_actors.erase(iter);
+			delete a;
+			deleteBufferIndex--;
+		}
+		while(createBufferIndex >= 0)
+		{
+			Actor* a = m_createBuffer[createBufferIndex];
+			m_actors.push_back(a);
+			createBufferIndex--;
 		}
 	}
 }
@@ -59,6 +84,7 @@ void System::draw(const float scale)
 {
 	Renderer renderer = Renderer::get();
 	renderer.startFrame(scale);
+	std::cout << "Actors: " << m_actors.size() << std::endl;
 	for(auto i : m_actors)
 	{
 		i->draw(renderer);

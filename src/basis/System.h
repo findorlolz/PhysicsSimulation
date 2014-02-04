@@ -8,7 +8,12 @@ class Actor;
 class System
 {
 public:
-	System() {}
+	System() 
+	{
+		m_createBuffer = new Actor*[1028];
+		m_deleteBuffer = new int[1028];
+
+	}
 	virtual ~System();
 
 	virtual void evalSystem(const float);
@@ -16,6 +21,8 @@ public:
 
 protected:
 	std::vector<Actor*> m_actors;
+	Actor** m_createBuffer;
+	int* m_deleteBuffer;
 
 };
 
