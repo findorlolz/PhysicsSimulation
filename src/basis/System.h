@@ -22,7 +22,6 @@ public:
 	MemPool* particleEmitterPool;		//4
 	MemPool* particlePool;				//4
 	bool activeFlag;					//4
-	unsigned long int buff;
 };
 
 class System

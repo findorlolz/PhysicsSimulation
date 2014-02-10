@@ -152,9 +152,15 @@ void DynamicSystem::evalSystem(const float dt)
 			size_t index = m_threadRemoveBuffers[threadIndex][i];
 			Actor* a = m_actors[index].actor;
 			if(a->getActorType() == ActorType_ParticleEmitter)
+			{
+				a->~Actor();
 				m_particleEmitterPool->release((unsigned char*) a);
+			}
 			else
+			{
+				a->~Actor();
 				m_particlePool->release((unsigned char*) a);
+			}
 			m_actors[index].actor = nullptr;
 			m_freeContainerIndices.push_back(index);
 		}

@@ -34,7 +34,6 @@ StateEval TraingleEmitter<ParticleSystem>::evalF(const float dt, const State&, A
 		FW::Vec3f v = r3 * (m_formBasis*rndToUnitHalfSphere);	
 		ParticleEmitter<ParticleSystem>* particle = new (c.particleEmitterPool->alloc()) ParticleEmitter<ParticleSystem>(1.0f,p,v,m_lifetimeOfParticles, m_lifetimeOfParticles,
 			m_timeBetween, m_minSpeed, m_maxSpeed);
-		//ParticleEmitter<ParticleSystem>* particle = new  ParticleEmitter<ParticleSystem>(1.0f,p,v,m_lifetimeOfParticles, m_lifetimeOfParticles, m_timeBetween, m_minSpeed, m_maxSpeed);
 		c.createdActors.push_back(particle);
 		tmp -= m_timeBetween;
 	}
