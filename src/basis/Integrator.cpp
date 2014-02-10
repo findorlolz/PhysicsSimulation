@@ -1,5 +1,6 @@
 #include "Integrator.h"
 #include "Actor.h"
+#include "System.h"
 
 
 EulerIntegrator& EulerIntegrator::get()
@@ -13,13 +14,14 @@ EulerIntegrator& EulerIntegrator::get()
 	return *gpSingleton;
 }
 
-void EulerIntegrator::evalIntegrator(const float dt, Actor* actor, std::vector<Actor*>& actorlist)
+void EulerIntegrator::evalIntegrator(const float dt, ActorContainer& c)
 {
-	State current = actor->getState();
-	StateEval tmp = actor->evalF(dt, current, actorlist);
+	Actor* a = c.actor;
+	State current = a->getState();
+	StateEval tmp = a->evalF(dt, current, c);
 	current.updateState(tmp);
-	actor->setTime(dt);
-	actor->setState(current);
+	a->setTime(dt);
+	a->setStateBuffer(current);
 }
 
 Runge_KuttaIntegrator& Runge_KuttaIntegrator::get()
@@ -33,7 +35,7 @@ Runge_KuttaIntegrator& Runge_KuttaIntegrator::get()
 	return *gpSingleton;
 }
 
-void Runge_KuttaIntegrator::evalIntegrator(const float dt, Actor* actor, std::vector<Actor*>& actors)
+void Runge_KuttaIntegrator::evalIntegrator(const float dt, Actor* actor, ActorContainer& c)
 {
 	State current = actor->getState();
 	StateEval tmp;
@@ -44,18 +46,46 @@ void Runge_KuttaIntegrator::evalIntegrator(const float dt, Actor* actor, std::ve
 	State k4 = current;
 	State k3 = current;
 
-	tmp = actor->evalF(dt, current, actors);
+	tmp = actor->evalF(dt, current, c);
 	k1.updateState(tmp);
 	current.updateState(tmp, f);
-	tmp = actor->evalF(dt*0.5f, k1, actors);
+	tmp = actor->evalF(dt*0.5f, k1, c);
 	k2.updateState(tmp);
 	current.updateState(tmp,2.0*f);
-	tmp = actor->evalF(dt*0.5f, k2, actors);
+	tmp = actor->evalF(dt*0.5f, k2, c);
 	k3.updateState(tmp);
 	current.updateState(tmp,2.0*f);
-	tmp = actor->evalF(dt, k3, actors);
+	tmp = actor->evalF(dt, k3, c);
 	k4.updateState(tmp);
 	current.updateState(tmp, f);
-	actor->setState(current);
+	actor->setStateBuffer(current);
+	actor->setTime(dt);
+}
+
+void Runge_KuttaIntegrator::evalIntegrator(const float dt, ActorContainer& c)
+{
+	Actor* actor = c.actor;
+	State current = actor->getState();
+	StateEval tmp;
+	const float f = 1.0f/6.0f;
+
+	State k1 = current;
+	State k2 = current;
+	State k4 = current;
+	State k3 = current;
+
+	tmp = actor->evalF(dt, current, c);
+	k1.updateState(tmp);
+	current.updateState(tmp, f);
+	tmp = actor->evalF(dt*0.5f, k1, c);
+	k2.updateState(tmp);
+	current.updateState(tmp,2.0*f);
+	tmp = actor->evalF(dt*0.5f, k2, c);
+	k3.updateState(tmp);
+	current.updateState(tmp,2.0*f);
+	tmp = actor->evalF(dt, k3, c);
+	k4.updateState(tmp);
+	current.updateState(tmp, f);
+	actor->setStateBuffer(current);
 	actor->setTime(dt);
 }

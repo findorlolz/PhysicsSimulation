@@ -37,6 +37,10 @@ void Renderer::startFrame(const float scale)
 		FW::MeshBase* mesh = m_assetManager->getMesh(MeshType_Axis);
 		mesh->draw(m_context, m_worldToCamera, m_projection);
 	}
+}
+
+void Renderer::clearDynamicMesh()
+{
 	m_dynamicMesh.clear();
 	m_dynamicMesh.addSubmesh();
 }

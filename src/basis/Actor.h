@@ -2,9 +2,9 @@
 
 #include "base/Math.hpp"
 #include "base/Random.hpp"
-#include "HelpFunctions.h"
 #include <iostream>
 #include <vector>
+#include "HelpFunctions.h"
 
 enum ActorType
 {
@@ -16,20 +16,21 @@ enum ActorType
 
 class System;
 class Renderer;
+class ActorContainer;
+
 
 class StateEval
 {
 public:
-	StateEval() {}
+	StateEval(){}
 	StateEval(const FW::Vec3f& dx, const FW::Vec3f& dv) :
 		dx(dx),
 		dv(dv)
-	{}
-	~StateEval() {}
+	{
+	}
 
 	FW::Vec3f dx;
 	FW::Vec3f dv;
-
 };
 
 class State
@@ -44,6 +45,8 @@ public:
 	FW::Vec3f pos;
 	FW::Vec3f vel;
 
+	State& operator=(const State&) { return *this; }
+
 	void updateState(const StateEval& s, const float f = 1.0f) { pos += s.dx * f; vel += s.dv * f; }
 	void print() { std::cout << "State: Pos - " << pos.x << "/" << pos.y << "/" << pos.z << " Vel - " << vel.x << "/" << vel.y<< "/" << vel.z << std::endl; }
 };
@@ -54,24 +57,29 @@ public:
 	Actor(ActorType type, const float lifetime) :
 	m_type(type),
 	m_lifetime(lifetime),
-	m_timer(0.0f),
-	m_state(State())
+	m_timer(0.0f)
 	{}
 	virtual ~Actor() {}
 
 	virtual ActorType getActorType() const { return m_type; }
-	virtual StateEval evalF(const float, const State&,std::vector<Actor*>&) { std::cout << "Used default for evalF.." << std::endl; return StateEval(); }
+	virtual StateEval evalF(const float, const State&, ActorContainer& ) { std::cout << "Used default for evalF.." << std::endl; return StateEval(); }
 	virtual State getState() const { return m_state; }
 	virtual FW::Vec3f getPos() const { return m_state.pos; }
 	
-	virtual void setState(const State& s) { m_state.pos = s.pos; m_state.vel = s.vel; }
+	virtual void setStateBuffer(const State&s) { m_stateBuffer.pos = s.pos; m_stateBuffer.vel = s.vel; }
+	virtual void updateStateFromBuffer() { setState(m_stateBuffer); }
 	virtual void setTime(const float dt) { m_timer += dt; }
-
+	virtual void setState(const State& s) { m_state.pos = s.pos; m_state.vel = s.vel; }
 	virtual bool isDone() const { return m_timer > m_lifetime; }
 	virtual void draw(Renderer&) {}
 
+	virtual void reset(const State& s) {m_timer = 0.0f; setStateBuffer(s); updateStateFromBuffer(); }
+	virtual void reset(const State& s, const float lifetime) {m_timer = 0.0f; setStateBuffer(s); updateStateFromBuffer(); m_lifetime = lifetime; }
+
 protected:
+
 	State		m_state;
+	State		m_stateBuffer;
 	ActorType	m_type;
 	float		m_lifetime;
 	float		m_timer;
@@ -86,7 +94,8 @@ public:
 		m_invertMass(1.0f/mass),
 		Actor(type, lifetime)
 	{
-		m_state = State(p, v);
+		setState(State(p, v));
+		setStateBuffer(m_state);
 	}
 
 	virtual ~Particle() {}
@@ -99,7 +108,7 @@ public:
 	void setAcc(const FW::Vec3f a) { m_state.acc = a; }
 	void addToTimer(const float d) { m_timer += d; }
 	
-	virtual StateEval evalF(const float, const State&,std::vector<Actor*>&);
+	virtual StateEval evalF(const float, const State&,ActorContainer&);
 	virtual void draw(Renderer& renderer);
 
 protected:
@@ -133,7 +142,7 @@ public:
 	
 	virtual ~TraingleEmitter() {}
 
-	virtual StateEval evalF(const float, const State&,std::vector<Actor*>&);
+	virtual StateEval evalF(const float, const State&, ActorContainer&);
 	virtual bool isDone() const { return false; }
 
 private:
@@ -161,7 +170,7 @@ public:
 	{}
 	virtual ~Deflecter() {}
 
-	virtual StateEval evalF(const float, const State&,std::vector<Actor*>&);
+	virtual StateEval evalF(const float, const State&, ActorContainer&);
 
 private:
 	float m_range;
@@ -186,6 +195,7 @@ public:
 			m_randomGen = FW::Random();
 			m_carrier = new Particle<System>(mass, p, v, lifetime);
 			m_state = m_carrier->getState();
+			setStateBuffer(m_state);
 	}
 	virtual ~ParticleEmitter() 
 	{
@@ -193,7 +203,7 @@ public:
 	}
 
 	virtual void draw(Renderer&);
-	virtual StateEval evalF(const float, const State&,std::vector<Actor*>&);
+	virtual StateEval evalF(const float, const State&, ActorContainer&);
 
 private:
 	FW::Random m_randomGen;

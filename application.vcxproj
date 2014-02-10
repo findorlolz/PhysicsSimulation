@@ -137,6 +137,7 @@
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>false</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -205,7 +206,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
-      <OpenMPSupport>true</OpenMPSupport>
+      <OpenMPSupport>false</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -343,6 +344,7 @@
     <ClInclude Include="src\basis\Forces.h" />
     <ClInclude Include="src\basis\HelpFunctions.h" />
     <ClInclude Include="src\basis\Integrator.h" />
+    <ClInclude Include="src\basis\Memory.h" />
     <ClInclude Include="src\basis\Renderer.h" />
     <ClInclude Include="src\basis\System.h" />
   </ItemGroup>
@@ -351,6 +353,7 @@
     <ClCompile Include="src\basis\App.cpp" />
     <ClCompile Include="src\basis\AssetManager.cpp" />
     <ClCompile Include="src\basis\Integrator.cpp" />
+    <ClCompile Include="src\basis\Memory.cpp" />
     <ClCompile Include="src\basis\Renderer.cpp" />
     <ClCompile Include="src\basis\System.cpp" />
   </ItemGroup>

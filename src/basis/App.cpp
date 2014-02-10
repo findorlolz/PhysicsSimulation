@@ -106,7 +106,7 @@ bool App::handleEvent( const Window::Event& event )
 	case Action_StartParticleSystem:
 		if(m_system != nullptr)
 			delete m_system;
-		m_system = new ParticleSystem();
+		m_system = new ParticleSystem(4.0f, 6.0f, 0.03f, 2.0f);
 		m_timer = Timer();
 		m_lastFrameTick = 0.0f;
 		break;
@@ -142,6 +142,7 @@ bool App::handleEvent( const Window::Event& event )
 		{
 			m_lastFrameTick = tick;
 			m_system->evalSystem(dt);
+			m_system->updateMesh();
 		}
 	}
 

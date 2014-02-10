@@ -3,6 +3,8 @@
 #include <vector>
 #include "base/Math.hpp"
 
+class ActorContainer;
+class StateEval;
 class Actor;
 
 class EulerIntegrator
@@ -12,7 +14,7 @@ public:
     ~EulerIntegrator() {}
 
 	static EulerIntegrator& get();
-	void evalIntegrator(const float dt, Actor*, std::vector<Actor*>&);
+	void evalIntegrator(const float, ActorContainer&);
 };
 
 
@@ -23,6 +25,7 @@ public:
     ~Runge_KuttaIntegrator() {}
 
 	static Runge_KuttaIntegrator& get();
-	void evalIntegrator(const float dt, Actor*, std::vector<Actor*>&);
+	void evalIntegrator(const float, ActorContainer&);
+	void evalIntegrator(const float, Actor*, ActorContainer&);
 };
 

@@ -7,7 +7,6 @@
 #include <vector>
 #include <base/Math.hpp>
 
-
 inline static FW::Mat3f formBasis(const FW::Vec3f& n)
 {
 	FW::Vec3f q = n;

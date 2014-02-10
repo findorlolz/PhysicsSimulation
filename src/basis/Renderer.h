@@ -11,13 +11,13 @@ public:
 
         static Renderer& get()
         {
-                static Renderer* gpSingleton = nullptr;
-                if (gpSingleton == nullptr)
-                {
-                        gpSingleton = new Renderer();
-                }
-                FW_ASSERT(gpSingleton != nullptr && "Failed to create Renderer");
-                return *gpSingleton;
+			static Renderer* gpSingleton = nullptr;
+			if (gpSingleton == nullptr)
+			{
+					gpSingleton = new Renderer();
+			}
+			FW_ASSERT(gpSingleton != nullptr && "Failed to create Renderer");
+			return *gpSingleton;
         }
 
 		void startUp(FW::GLContext*, FW::CameraControls*, AssetManager*, bool);
@@ -32,6 +32,8 @@ public:
 		void drawPyramid(const FW::Vec3f pos);
 		void drawTriangleToCamera(const FW::Vec3f&, const FW::Vec4f&);
 		void drawTriangleToCameraTest(const FW::Vec3f&);
+
+		void clearDynamicMesh();
 
 private:
 		FW::Mesh<FW::VertexPNC> m_dynamicMesh;
