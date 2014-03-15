@@ -109,6 +109,7 @@ bool App::handleEvent( const Window::Event& event )
 			delete m_system;
 		m_system = new ParticleSystem(4.0f, 6.0f, 0.2f, 4.0f);
 		m_timer = Timer();
+		m_scale = 0.03f;
 		m_lastFrameTick = 0.0f;
 		break;
 
@@ -117,6 +118,7 @@ bool App::handleEvent( const Window::Event& event )
 			delete m_system;
 		m_system = new FlowSystem();
 		m_timer = Timer();
+		m_scale = 0.01;
 		m_lastFrameTick = 0.0f;
 		break;
 

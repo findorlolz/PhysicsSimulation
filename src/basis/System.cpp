@@ -110,7 +110,7 @@ BoidSystem::BoidSystem(const float closeDistance, const size_t numOfParticles) :
 FlowSystem::FlowSystem() : 
 	System()
 {
-	m_flow = new FlowControl(2.0f, FW::Vec3f(0.0f, -1.0f, -1.0f),200,100, 100, .05f, 1.0f);
+	m_flow = new FlowControl(1.0f, FW::Vec3f(0.0f, -2.0f, -2.0f),200,100, 100, .1f, 1.0f);
 	m_particlePool = new MemPool();
 	const float time = 0.001f;
 	size_t numParticles = 10/time;
