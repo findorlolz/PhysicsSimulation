@@ -206,7 +206,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
-      <OpenMPSupport>false</OpenMPSupport>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -341,17 +341,20 @@
     <ClInclude Include="src\basis\Actor.h" />
     <ClInclude Include="src\basis\App.hpp" />
     <ClInclude Include="src\basis\AssetManager.h" />
+    <ClInclude Include="src\basis\FlowGrid.h" />
     <ClInclude Include="src\basis\Forces.h" />
     <ClInclude Include="src\basis\HelpFunctions.h" />
     <ClInclude Include="src\basis\Integrator.h" />
     <ClInclude Include="src\basis\Memory.h" />
     <ClInclude Include="src\basis\Renderer.h" />
     <ClInclude Include="src\basis\System.h" />
+    <ClInclude Include="src\basis\Vector.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\basis\Actor.cpp" />
     <ClCompile Include="src\basis\App.cpp" />
     <ClCompile Include="src\basis\AssetManager.cpp" />
+    <ClCompile Include="src\basis\FlowGrid.cpp" />
     <ClCompile Include="src\basis\Integrator.cpp" />
     <ClCompile Include="src\basis\Memory.cpp" />
     <ClCompile Include="src\basis\Renderer.cpp" />

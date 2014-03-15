@@ -6,6 +6,26 @@
 
 #include <vector>
 #include <base/Math.hpp>
+#include <iostream>
+
+inline static int indexBasedOnFloat(const float size, float value, float& d)
+{
+	int i = 0;
+	if(value <= 0.0f)
+	{
+		d = value;
+		return -1;
+	}
+	while(value > size)
+	{
+		if(value < 0.0f)
+			return 0;
+		i++;
+		value -= size;
+	}
+	d = value/size;
+	return i;
+}
 
 inline static FW::Mat3f formBasis(const FW::Vec3f& n)
 {

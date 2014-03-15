@@ -3,25 +3,27 @@
 #include "base/Random.hpp"
 #include <vector>
 #include <omp.h>
+#include "Vector.h"
 
 class Actor;
 class ActorContainer;
 class State;
 class MemPool;
+class FlowControl;
 
-const size_t threadBufferSize = 256;
+const size_t threadBufferSize = 10240;
 
 class ActorContainer
 {
 public:
-	ActorContainer(MemPool*, MemPool*);
+	ActorContainer(void*, void*);
 	~ActorContainer() {}
 
-	std::vector<Actor*> createdActors;	//16
-	Actor* actor;						//4
-	MemPool* particleEmitterPool;		//4
-	MemPool* particlePool;				//4
-	bool activeFlag;					//4
+	std::vector<Actor*> createdActors;	
+	Actor* actor;						
+	void* data1;						
+	void* data2;					
+	bool activeFlag;					
 };
 
 class System
@@ -36,39 +38,30 @@ public:
 	virtual void updateMesh();
 
 protected:
-	std::vector<ActorContainer> m_actors;
+	nsVector<ActorContainer> m_actors;
 };
 
-class DynamicSystem : public System
+class ParticleSystem : public System
 {
 public:
-	DynamicSystem();
-	~DynamicSystem();
+	ParticleSystem(const float, const float, const float, const float, const float = 1.0f);
+	virtual ~ParticleSystem();
 
-	virtual void evalSystem(const float);
+	virtual void evalSystem(const float dt);
 
-protected:
-	std::vector<size_t> m_freeContainerIndices;
+private:
+	void estimateParticleNumRec(float, const float);
+
+	nsVector<size_t> m_freeContainerIndices;
 	Actor*** m_threadCreateBuffers;
 	size_t** m_threadRemoveBuffers;
 	size_t* m_threadCreateBufferIndex;
 	size_t* m_threadRemoveBufferIndex;
-	size_t m_maxNumThreads;
-
-	size_t m_numParticles;
-	size_t m_numParticleEmitters;
 	MemPool* m_particlePool;
 	MemPool* m_particleEmitterPool;
-};
-
-class ParticleSystem : public DynamicSystem
-{
-public:
-	ParticleSystem(const float, const float, const float, const float, const float = 1.0f);
-	virtual ~ParticleSystem() {}
-
-private:
-	void estimateParticleNumRec(float, const float);
+	size_t m_maxNumThreads;
+	size_t m_numParticles;
+	size_t m_numParticleEmitters;
 };
 
 class BoidSystem : public System
@@ -82,4 +75,18 @@ private:
 	std::vector<Actor*> m_closeBuffer;
 	float m_closeDistance;
 	size_t m_numberOfParticles;
+};
+
+class FlowSystem : public System
+{
+public:
+	FlowSystem();
+	virtual  ~FlowSystem();
+
+	virtual void evalSystem(const float dt);
+
+private:
+	std::vector<size_t> m_freeContainerIndices;
+	FlowControl* m_flow;
+	MemPool* m_particlePool;
 };

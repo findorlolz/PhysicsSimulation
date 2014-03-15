@@ -28,6 +28,7 @@ App::App( void ) :
 	m_commonCtrl.addSeparator();
 	m_commonCtrl.addButton((S32*)&m_action, Action_StartParticleSystem, FW_KEY_1, "Create new particles system" );
 	m_commonCtrl.addButton((S32*)&m_action, Action_StartBoidSystem, FW_KEY_2, "Create new boid system" );
+	m_commonCtrl.addButton((S32*)&m_action, Action_StartFlowSystem, FW_KEY_3, "Create new flow system" );
 	m_commonCtrl.beginSliderStack();
 	m_commonCtrl.addSlider(&m_scale, 0.0001f, 1.0f, true, FW_KEY_NONE, FW_KEY_NONE, "Scale meshes");
 	m_commonCtrl.addSlider(&m_stepSize, 0.0001f, 1.0f, true, FW_KEY_NONE, FW_KEY_NONE, "Step size = %f ");
@@ -106,7 +107,15 @@ bool App::handleEvent( const Window::Event& event )
 	case Action_StartParticleSystem:
 		if(m_system != nullptr)
 			delete m_system;
-		m_system = new ParticleSystem(4.0f, 6.0f, 0.03f, 2.0f);
+		m_system = new ParticleSystem(4.0f, 6.0f, 0.2f, 4.0f);
+		m_timer = Timer();
+		m_lastFrameTick = 0.0f;
+		break;
+
+	case Action_StartFlowSystem:
+		if(m_system != nullptr)
+			delete m_system;
+		m_system = new FlowSystem();
 		m_timer = Timer();
 		m_lastFrameTick = 0.0f;
 		break;

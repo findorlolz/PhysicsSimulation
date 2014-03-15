@@ -6,11 +6,12 @@
 #include <vector>
 #include "HelpFunctions.h"
 
+
 enum ActorType
 {
 	ActorType_Emitter,
 	ActorType_Particle,
-	ActorType_Deflecter,
+	ActorType_PlaneEmitter,
 	ActorType_ParticleEmitter
 };
 
@@ -116,12 +117,13 @@ protected:
 	float m_invertMass;
 };
 
-template<typename System>
-class TraingleEmitter : public Actor
+
+class PlaneEmitter : public Actor
 {
 public:
-	TraingleEmitter(const FW::Vec3f& posa, const FW::Vec3f& posb, const FW::Vec3f& posc, const float minSpeed,
-		const float maxSpeed, const float timeBetweenParticles, const float particleMass, const float lifetimeOfParticles) :
+	PlaneEmitter(const FW::Vec3f& posa, const FW::Vec3f& posb, const FW::Vec3f& posc, const float minSpeed,
+		const float maxSpeed, const float timeBetweenParticles, const float lifetimeOfParticles, const float particleMass,
+		bool useParticleEmitters) :
 		m_posA(posa),
 		m_posB(posb),
 		m_posC(posc),
@@ -131,6 +133,7 @@ public:
 		m_particleMass(particleMass),
 		m_lifetimeOfParticles(lifetimeOfParticles),
 		m_previousTick(0.0f),
+		m_particleEmitters(useParticleEmitters),
 		Actor(ActorType_Emitter, 1.0f)
 	{
 		m_normal = FW::cross((m_posB - m_posA), (m_posC - m_posA));
@@ -140,12 +143,12 @@ public:
 		m_state.pos = (m_posA + m_posB + m_posC)/3.0f; 
 	}
 	
-	virtual ~TraingleEmitter() {}
+	virtual ~PlaneEmitter() {}
 
-	virtual StateEval evalF(const float, const State&, ActorContainer&);
+	virtual StateEval evalF(const float, const State&, ActorContainer&) { return StateEval(); }
 	virtual bool isDone() const { return false; }
 
-private:
+protected:
 	FW::Random m_randomGen;
 	FW::Mat3f m_formBasis;
 	FW::Vec3f m_posA;
@@ -158,23 +161,94 @@ private:
 	float m_maxSpeed;
 	float m_particleMass;
 	float m_lifetimeOfParticles;
+	bool m_particleEmitters;
 };
 
 template<typename System>
-class Deflecter : public Actor
+class SquareEmitter : public PlaneEmitter
 {
 public:
-	Deflecter(const FW::Vec3f pos, const float range, const float k) :
-		m_position(pos),
-		Actor(ActorType_Deflecter)
-	{}
-	virtual ~Deflecter() {}
+	SquareEmitter(const FW::Vec3f& posA, const FW::Vec3f& posB, const FW::Vec3f& posC, const float minSpeed, const float maxSpeed,
+		const float timeBetweenParticles, const float particleLifetime, const float particleMass, bool useParticleEmitters) :
+	PlaneEmitter(posA, posB, posC, minSpeed, maxSpeed, timeBetweenParticles, particleLifetime, particleMass, useParticleEmitters)
+	{
+	}
+	virtual ~SquareEmitter() {}
 
-	virtual StateEval evalF(const float, const State&, ActorContainer&);
+	StateEval evalF(const float dt, const State&, ActorContainer& c)
+	{	
+		float tmp = dt + m_previousTick;
+		StateEval state = StateEval();
+		while(tmp >= m_timeBetween)
+		{
+			float r1 = m_randomGen.getF32(0,1.0f);
+			float r2 = m_randomGen.getF32(0,1.0f);
+			FW::Vec3f p = m_posA + r1*(m_posB - m_posA) + r2*(m_posC - m_posA);
+			float r3 = m_randomGen.getF32(m_minSpeed, m_maxSpeed);
+			FW::Vec2f rndUnitSquare = m_randomGen.getVec2f(0.0f,1.0f);
+			FW::Vec2f rndUnitDisk = toUnitDisk(rndUnitSquare);
+			FW::Vec3f rndToUnitHalfSphere = FW::Vec3f(rndUnitDisk.x, rndUnitDisk.y, FW::sqrt(1.0f-(rndUnitDisk.x*rndUnitDisk.x)-(rndUnitDisk.y*rndUnitDisk.y)));
+			FW::Vec3f v = r3 * (m_formBasis*rndToUnitHalfSphere);
+			if(m_particleEmitters)
+			{
+				ParticleEmitter<System>* particle = new (((MemPool*) c.data2)->alloc()) ParticleEmitter<System>(1.0f,p,v,m_lifetimeOfParticles, m_lifetimeOfParticles,
+					m_timeBetween, m_minSpeed, m_maxSpeed);
+				c.createdActors.push_back(particle);
+			}
+			else
+			{
+				Particle<System>* particle = new (((MemPool*) c.data1)->alloc()) Particle<System>(1.0f,p,v,m_lifetimeOfParticles);
+				c.createdActors.push_back(particle);
+			}
+			tmp -= m_timeBetween;
+		}
+		m_previousTick = tmp;
+		return state;
+	}
+};
 
-private:
-	float m_range;
-	float m_k;
+template<typename System>
+class TriangleEmitter : public PlaneEmitter
+{
+public:
+	TriangleEmitter(const FW::Vec3f& posA, const FW::Vec3f& posB, const FW::Vec3f& posC, const float minSpeed, const float maxSpeed,
+		const float timeBetweenParticles, const float particleLifetime, const float particleMass, bool useParticleEmitters) :
+	PlaneEmitter(posA, posB, posC, minSpeed, maxSpeed, timeBetweenParticles, particleLifetime, particleMass, useParticleEmitters)
+	{
+	}
+	virtual ~TriangleEmitter() {}
+
+	StateEval evalF(const float dt, const State&, ActorContainer& c)
+	{	
+		float tmp = dt + m_previousTick;
+		StateEval state = StateEval();
+		while(tmp >= m_timeBetween)
+		{
+			float sqr_r1 = FW::sqrt(m_randomGen.getF32(0,1.0f));
+			float r2 = m_randomGen.getF32(0,1.0f);
+			FW::Vec3f p = (1-sqr_r1)*m_posA + sqr_r1*(1-r2)*m_posB + sqr_r1*r2*m_posC;
+			float r3 = m_randomGen.getF32(m_minSpeed, m_maxSpeed);
+			FW::Vec2f rndUnitSquare = m_randomGen.getVec2f(0.0f,1.0f);
+			FW::Vec2f rndUnitDisk = toUnitDisk(rndUnitSquare);
+			FW::Vec3f rndToUnitHalfSphere = FW::Vec3f(rndUnitDisk.x, rndUnitDisk.y, FW::sqrt(1.0f-(rndUnitDisk.x*rndUnitDisk.x)-(rndUnitDisk.y*rndUnitDisk.y)));
+			//FW::Vec3f v = r3 * (m_formBasis*rndToUnitHalfSphere);
+			FW::Vec3f v = FW::Vec3f(1.0f, 0.0f, 0.0f);
+			if(m_particleEmitters)
+			{
+				ParticleEmitter<System>* particle = new (((MemPool*) c.data2)->alloc()) ParticleEmitter<System>(1.0f,p,v,m_lifetimeOfParticles, m_lifetimeOfParticles,
+					m_timeBetween, m_minSpeed, m_maxSpeed);
+				c.createdActors.push_back(particle);
+			}
+			else
+			{
+				Particle<System>* particle = new (((MemPool*) c.data1)->alloc()) Particle<System>(1.0f,p,v,m_lifetimeOfParticles);
+				c.createdActors.push_back(particle);
+			}
+			tmp -= m_timeBetween;
+		}
+		m_previousTick = tmp;
+		return state;
+}
 };
 
 template<typename System>
@@ -203,7 +277,28 @@ public:
 	}
 
 	virtual void draw(Renderer&);
-	virtual StateEval evalF(const float, const State&, ActorContainer&);
+	StateEval evalF(const float dt, const State&, ActorContainer& c)
+	{
+		float tmp = dt + m_previousTick;
+		while(tmp >= m_timeBetween)
+		{
+			float r3 = m_randomGen.getF32(m_minSpeed*0.5f, m_maxSpeed*0.5f);
+			FW::Vec2f rndUnitSquare = m_randomGen.getVec2f(0.0f,1.0f);
+			FW::Vec2f rndUnitDisk = toUnitDisk(rndUnitSquare);
+			FW::Mat3f formBasisMat = formBasis(FW::Vec3f(0.0f, 1.0f, 0.0f));
+			FW::Vec3f rndToUnitHalfSphere = FW::Vec3f(rndUnitDisk.x, rndUnitDisk.y, FW::sqrt(1.0f-(rndUnitDisk.x*rndUnitDisk.x)-(rndUnitDisk.y*rndUnitDisk.y)));
+			FW::Vec3f v = r3*(formBasisMat*rndToUnitHalfSphere);
+			Particle<System>* particle = new (((MemPool*) c.data1)->alloc()) Particle<System>(1.0f, m_carrier->getPos(), v, m_lifetime);
+			c.createdActors.push_back(particle);
+			tmp -= m_timeBetween;
+		}
+		m_previousTick = tmp;
+		Runge_KuttaIntegrator integrator = Runge_KuttaIntegrator::get();
+		integrator.evalIntegrator(dt, m_carrier, c);
+		m_carrier->updateStateFromBuffer();
+		setState(m_carrier->getState());
+		return StateEval();
+	}
 
 private:
 	FW::Random m_randomGen;
