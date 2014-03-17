@@ -13,6 +13,7 @@ public:
 		~FlowGrid() {}
 
 		FW::Vec3f getSpeed(const FW::Vec3f&) const;
+		float getFlowSpeed() const { return m_flowSpeed; }
 
 private:
 	void init();
@@ -44,6 +45,7 @@ public:
 		~FlowControl();
 	
 	FW::Vec3f getSpeed(const FW::Vec3f&,const float);
+	float getFlowSpeed() const { return m_grid1->getFlowSpeed(); }
 
 private:
 	float m_tick;

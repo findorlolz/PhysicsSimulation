@@ -20,7 +20,7 @@ FW::Vec3f FlowControl::getSpeed(const FW::Vec3f& pos, const float dt)
 	while(m_tick > m_interval)
 		m_tick -= m_interval;
 	float t = m_tick/m_interval;
-	return t * m_grid1->getSpeed(pos) + (1-t) * m_grid2->getSpeed(pos);
+	return t * m_grid1->getSpeed(pos) + (1.0f-t) * m_grid2->getSpeed(pos);
 }
 
 FlowGrid::FlowGrid(FW::Vec3f startPoint, const size_t l, const size_t h, const size_t w, const float gridSize, const float flowSpeed)
@@ -49,7 +49,11 @@ void FlowGrid::init()
 		FW::Vec2f rndUnitDisk = toUnitDisk(rndUnitSquare);
 		FW::Vec3f rndToUnitHalfSphere = FW::Vec3f(rndUnitDisk.x, rndUnitDisk.y, FW::sqrt(1.0f-(rndUnitDisk.x*rndUnitDisk.x)-(rndUnitDisk.y*rndUnitDisk.y)));
 		FW::Vec3f v = formBasisMatrix*rndToUnitHalfSphere;
-		m_data[i] = v;
+		FW::Vec3f r = randomGen.getVec3f(-1., 1.f);
+		m_data[i] = .5f * (r + v);
+		m_data[i] = randomGen.getF32(.0f,1.f) * v;
+		//std::cout << m_data[i].x << "/" << m_data[i].y << "/" << m_data[i].z << std::endl;
+		//_data[i] = FW::Vec3f(1.0f, .0f, .0f);
 	}
 }
 
@@ -67,16 +71,16 @@ FW::Vec3f FlowGrid::getSpeed(const FW::Vec3f& pos) const
 	FW::Vec3f total;
 	size_t index = l * m_2D + h * m_1D + w;
 	
-	if(l >= m_l)
+	if(l >= m_l || l < 0)
 		return total;
 	else
 		total += dl * m_data[m_2D+index] + (1.0f - dl) *  m_data[index];
-	
+
 	if(h >= m_h || h < 0)
 		yFlag = true;
 	else
 		total += dh * m_data[index + m_1D] + (1.0f - dh) *  m_data[index];
-
+	
 	if(w >= m_w || w < 0)
 		zFlag = true;
 	else

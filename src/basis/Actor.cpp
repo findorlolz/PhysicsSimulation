@@ -5,7 +5,7 @@
 #include "FlowGrid.h"
 
 ActorContainer::ActorContainer(void* d1 = nullptr, void* d2 = nullptr) :
-		activeFlag(false),
+	status(ActorContainer::ActiveStatus_Unactive),
 		actor(nullptr),
 		data1(d1),
 		data2(d2)
@@ -25,7 +25,7 @@ StateEval Particle<ParticleSystem>::evalF(const float dt, const State& current, 
 }
 
 template<>
-StateEval Particle<BoidSystem>::evalF(const float dt, const State& current, ActorContainer&)
+StateEval Particle<BoidSystem>::evalF(const float, const State&, ActorContainer&)
 {
 	StateEval next = StateEval();
 	//next.dv = boidEvalSpeed((current.vel + current.acc * dt), close) - current.vel;
@@ -37,11 +37,10 @@ template<>
 StateEval Particle<FlowSystem>::evalF(const float dt, const State& current, ActorContainer& c)
 {
 	StateEval next = StateEval();
-	FW::Vec3f speed = ((FlowControl*) c.data2)->getSpeed(current.pos, dt);
+	FW::Vec3f speed = ((FlowControl*) c.data2)->getSpeed(current.pos, dt) + FW::Vec3f(.0f, -.1, .0f);
 	if (speed == FW::Vec3f())
 		m_lifetime = 0.0f;
 	next.dx = speed * dt;
+	next.dv = speed;
 	return next;
 }
-
-

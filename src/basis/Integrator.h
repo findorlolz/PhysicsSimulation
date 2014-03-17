@@ -21,11 +21,17 @@ public:
 class Runge_KuttaIntegrator
 {
 public:
-	Runge_KuttaIntegrator() {}
+	Runge_KuttaIntegrator() :
+		m_addToBuffer(false)
+	{}
     ~Runge_KuttaIntegrator() {}
 
 	static Runge_KuttaIntegrator& get();
 	void evalIntegrator(const float, ActorContainer&);
 	void evalIntegrator(const float, Actor*, ActorContainer&);
+	void setAddToBuffer(bool b) { m_addToBuffer = b; }
+
+private:
+	bool m_addToBuffer;
 };
 

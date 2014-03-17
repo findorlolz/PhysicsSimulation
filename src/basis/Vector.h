@@ -15,7 +15,8 @@ public:
 	{
 		if(size_ == capacity_)
 		{
-			capacity_ = capacity_ ? capacity_ * 2 : 8;
+			capacity_ = capacity_ ? capacity_ * 2 : 3;
+			std::cout << "New capasity " << capacity_ << std::endl;
 			allocateAndCopy();
 		}
 		new((void*) (data_+size_)) T(v);

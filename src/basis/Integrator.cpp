@@ -58,6 +58,7 @@ void Runge_KuttaIntegrator::evalIntegrator(const float dt, Actor* actor, ActorCo
 	tmp = actor->evalF(dt, k3, c);
 	k4.updateState(tmp);
 	current.updateState(tmp, f);
+
 	actor->setStateBuffer(current);
 	actor->setTime(dt);
 }
@@ -86,6 +87,11 @@ void Runge_KuttaIntegrator::evalIntegrator(const float dt, ActorContainer& c)
 	tmp = actor->evalF(dt, k3, c);
 	k4.updateState(tmp);
 	current.updateState(tmp, f);
-	actor->setStateBuffer(current);
+
+	if(!m_addToBuffer)
+		actor->setStateBuffer(current);
+	else
+		actor->addToStateBuffer(current);
+	
 	actor->setTime(dt);
 }

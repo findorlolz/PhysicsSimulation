@@ -39,7 +39,7 @@ ParticleSystem::ParticleSystem(const float minSpeed, const float maxSpeed, const
 		tmp++;
 		time -= timeBetweenParticles;
 	}
-	m_actors = nsVector<ActorContainer>();
+
 	m_actors.reserve(m_numParticles + m_numParticleEmitters);
 	m_particlePool = new MemPool();
 	m_particlePool->startUp(sizeof(Particle<ParticleSystem>), m_numParticles + (m_numParticles/10));
@@ -54,7 +54,7 @@ ParticleSystem::ParticleSystem(const float minSpeed, const float maxSpeed, const
 	
 	ActorContainer c = ActorContainer(m_particlePool, m_particleEmitterPool);
 	c.actor = new TriangleEmitter<ParticleSystem>(FW::Vec3f(1,0,0),FW::Vec3f(0,0,0), FW::Vec3f(0,0,1), minSpeed, maxSpeed, timeBetweenParticles, particleLifeTime, particleMass, true);
-	c.activeFlag = true;
+	c.status = ActorContainer::ActiveStatus_Active;
 	m_actors.push_back(c);
 }
 
@@ -69,6 +69,8 @@ void ParticleSystem::estimateParticleNumRec(float lifetime, const float timeBetw
 
 ParticleSystem::~ParticleSystem()
 {
+	Runge_KuttaIntegrator::get().setAddToBuffer(false);
+
 	for( auto i = 0u; i < m_maxNumThreads; i++ ) delete[] m_threadRemoveBuffers[i];
 	delete[] m_threadRemoveBuffers;
 	for( auto i = 0u; i < m_maxNumThreads; i++ ) delete[] m_threadCreateBuffers[i];
@@ -77,13 +79,13 @@ ParticleSystem::~ParticleSystem()
 	delete[] m_threadRemoveBufferIndex;
 	
 	for(auto i : m_actors)
-	if(i.activeFlag)
-	{
-		if(i.actor->getActorType() != ActorType_Particle && i.actor->getActorType() != ActorType_ParticleEmitter)
-			delete i.actor;
-		else
-			i.actor->~Actor();
-	}
+		if(i.isActive())
+		{
+			if(i.actor->getActorType() != ActorType_Particle && i.actor->getActorType() != ActorType_ParticleEmitter)
+				delete i.actor;
+			else
+				i.actor->~Actor();
+		}
 
 	m_particleEmitterPool->shutDown();
 	delete m_particleEmitterPool;
@@ -110,15 +112,33 @@ BoidSystem::BoidSystem(const float closeDistance, const size_t numOfParticles) :
 FlowSystem::FlowSystem() : 
 	System()
 {
-	m_flow = new FlowControl(1.0f, FW::Vec3f(0.0f, -2.0f, -2.0f),200,100, 100, .1f, 1.0f);
+	Runge_KuttaIntegrator::get().setAddToBuffer(true);
+	
+	m_maxNumThreads = omp_get_max_threads();
+	m_threadRemoveBuffers = new size_t*[m_maxNumThreads];
+	for( auto i = 0u; i < m_maxNumThreads; i++ ) m_threadRemoveBuffers[i] = new size_t[threadBufferSize];
+	m_threadRemoveBufferIndex = new size_t[m_maxNumThreads];
+	for( auto i = 0u; i < m_maxNumThreads; i++ ) m_threadRemoveBufferIndex[i] = 0;
+
+	m_flow = new FlowControl(3.0f, FW::Vec3f(0.0f, -2.5f, -2.5f), 20, 10, 10, .5f, 1.f);
+	
 	m_particlePool = new MemPool();
-	const float time = 0.001f;
-	size_t numParticles = 10/time;
-	m_particlePool->startUp(sizeof(Particle<FlowSystem>),  (numParticles/10) + numParticles);
+	const float time = 0.01f;
+	const float time2 = .5f;
+	m_numParticles = 15000;
+	m_actors.reserve(m_numParticles);
+
+	m_particlePool->startUp(sizeof(Particle<FlowSystem>),  m_numParticles);
+
 	ActorContainer c = ActorContainer(m_particlePool, nullptr);
-	c.actor = new SquareEmitter<FlowSystem>(FW::Vec3f(0.1f, -0.5f, -0.5), FW::Vec3f(0.1f, 0.5f, -0.5), FW::Vec3f(0.1f, -0.5f, 0.0f),1.0f,5.0f,time,10.0f, 1.0f, false);
-	c.activeFlag = true;
+	c.actor = new SquareEmitter<FlowSystem>(FW::Vec3f(0.01f, .0f, .0f), FW::Vec3f(0.01f, 1.f, .0f), FW::Vec3f(0.01f, .0f, 1.f),time, 5.0f, 1.0f, false);
+	c.status = ActorContainer::ActiveStatus_Active;
 	m_actors.push_back(c);
+	
+	ActorContainer c2 = ActorContainer(m_particlePool, nullptr);
+	c2.actor = new SquareVortexEmitter<FlowSystem>(FW::Vec3f(0.01f, .0f, .0f), FW::Vec3f(0.01f, .0f, -1.f), FW::Vec3f(0.01f, -0.5f, 0.0f), time2, 5.0f, .25f, 1.f);
+	c2.status = ActorContainer::ActiveStatus_Active;
+	m_actors.push_back(c2);
 }
 
 FlowSystem::~FlowSystem()
@@ -126,13 +146,16 @@ FlowSystem::~FlowSystem()
 	delete m_flow;
 
 	for(auto i : m_actors)
-	if(i.activeFlag)
-	{
-		if(i.actor->getActorType() != ActorType_Particle && i.actor->getActorType() != ActorType_ParticleEmitter)
-			delete i.actor;
-		else
-			i.actor->~Actor();
-	}
+		if(i.isActive())
+		{
+			if(i.actor->getActorType() != ActorType_Particle)
+				delete i.actor;
+			else
+				i.actor->~Actor();
+		}
+
+	for( auto i = 0u; i < m_maxNumThreads; i++ ) delete[] m_threadRemoveBuffers[i];
+	delete m_threadRemoveBuffers;
 
 	m_particlePool->shutDown();
 	delete m_particlePool;
@@ -145,17 +168,17 @@ void ParticleSystem::evalSystem(const float dt)
 	#pragma omp parallel
 	{
 		#pragma omp for nowait
-		#pragma vector aligned
+		//#pragma vector aligned
 		for(int i = 0u; i < m_actors.size(); ++i)
 		{
 			ActorContainer& c = m_actors[i];
-			if(!c.activeFlag)
+			if(!c.isActive())
 				continue;
-			size_t threadIndex = omp_get_thread_num();
 			Actor* a = c.actor;
 			if(a->isDone())
 			{
-				m_actors[i].activeFlag = false;
+				size_t threadIndex = omp_get_thread_num();
+				m_actors[i].status = ActorContainer::ActiveStatus_Unactive;
 				m_threadRemoveBuffers[threadIndex][m_threadRemoveBufferIndex[threadIndex]] = i;
 				m_threadRemoveBufferIndex[threadIndex] += 1;
 			}
@@ -168,6 +191,7 @@ void ParticleSystem::evalSystem(const float dt)
 					eulerIntegrator.evalIntegrator(dt, c);
 					while(!c.createdActors.empty())
 					{
+						size_t threadIndex = omp_get_thread_num();
 						m_threadCreateBuffers[threadIndex][m_threadCreateBufferIndex[threadIndex]] = c.createdActors.back();
 						m_threadCreateBufferIndex[threadIndex] += 1;
 						c.createdActors.pop_back();
@@ -203,13 +227,13 @@ void ParticleSystem::evalSystem(const float dt)
 			{
 				ActorContainer& c = m_actors[m_freeContainerIndices.back()];
 				m_freeContainerIndices.pop_back();
-				c.activeFlag = true;
+				c.status = ActorContainer::ActiveStatus_Active;
 				c.actor = a;
 			}
 			else
 			{
 				ActorContainer c = ActorContainer(m_particlePool, m_particleEmitterPool);
-				c.activeFlag = true;
+				c.status = ActorContainer::ActiveStatus_Active;
 				c.actor = a;
 				m_actors.push_back(c);
 			}
@@ -217,10 +241,10 @@ void ParticleSystem::evalSystem(const float dt)
 		m_threadCreateBufferIndex[threadIndex] = 0;
 	}
 	#pragma omp parallel for
-	#pragma vector aligned
+	//#pragma vector aligned
 	for(int i = 0u; i < m_actors.size(); ++i)
 	{
-		if(m_actors[i].activeFlag)
+		if(m_actors[i].isActive())
 		{
 			m_actors[i].actor->updateStateFromBuffer();
 		}
@@ -231,48 +255,125 @@ void FlowSystem::evalSystem(const float dt)
 {
 	EulerIntegrator eulerIntegrator  = EulerIntegrator::get();
 	Runge_KuttaIntegrator rkIntegrator = Runge_KuttaIntegrator::get();
-	ActorContainer& c = m_actors[0];
-	eulerIntegrator.evalIntegrator(dt, c);
-	while(!c.createdActors.empty())
-	{					
-		Actor* a = c.createdActors.back();
-		c.createdActors.pop_back();
-		if(!m_freeContainerIndices.empty())
-		{
-			ActorContainer& c = m_actors[m_freeContainerIndices.back()];
-			m_freeContainerIndices.pop_back();
-			c.activeFlag = true;
-			c.actor = a;
+	
+	size_t index = 0u;
+	while(index < 2)
+	{
+		ActorContainer& c = m_actors[index];
+		eulerIntegrator.evalIntegrator(dt, c);
+	
+		while(!c.createdActors.empty())
+		{					
+			Actor* a = c.createdActors.back();
+			c.createdActors.pop_back();
+			if(!m_freeContainerIndices.empty())
+			{
+				ActorContainer& c = m_actors[m_freeContainerIndices.back()];
+				m_freeContainerIndices.pop_back();
+				c.status = ActorContainer::ActiveStatus_Active;			
+				c.actor = a;
+			}
+			else
+			{
+				ActorContainer c = ActorContainer(m_particlePool, m_flow);
+				c.status = ActorContainer::ActiveStatus_Active;
+				c.actor = a;
+				m_actors.push_back(c);
+			}
 		}
-		else
+		index++;
+	}
+
+	#pragma omp parallel
+	{
+		#pragma omp for
+		//#pragma vector aligned
+		for(int i = 2u; i < m_actors.size(); ++i)
 		{
-			ActorContainer c = ActorContainer(m_particlePool, m_flow);
-			c.activeFlag = true;
-			c.actor = a;
-			m_actors.push_back(c);
+			if(m_actors[i].isActive())
+				m_actors[i].actor->resetVortexVisible();
 		}
 	}
 
-	for(auto i = 1u; i < m_actors.size(); ++i)
+	#pragma omp parallel
 	{
+		#pragma omp for
+		//#pragma vector aligned
+		for(int i = 2u; i < m_actors.size(); ++i)
+		{
 			ActorContainer& c = m_actors[i];
-			if(!c.activeFlag)
+			if(!c.isActive())
 				continue;
 			Actor* a = c.actor;
 			if(a->isDone())
 			{
-				m_freeContainerIndices.push_back(i);
-				c.activeFlag = false;
+				size_t threadIndex = omp_get_thread_num();
+				m_threadRemoveBuffers[threadIndex][m_threadRemoveBufferIndex[threadIndex]] = i;
+				m_threadRemoveBufferIndex[threadIndex] += 1;
+				c.status = ActorContainer::ActiveStatus_Unactive;
+			}
+			else
+			{
+				if(a->getActorType() == ActorType_Particle)
+				{
+					rkIntegrator.evalIntegrator(dt, c);
+				}
+				else
+				{
+					for(int j = 2u; j < m_actors.size(); ++j)
+					{
+						if(m_actors[j].isActive())
+						{
+							Actor* a2 = m_actors[j].actor;
+							float d = (a2->getPos() - a->getPos()).length();
+							float inf = a->getInfluenceDistance();
+							if(d < inf && d > 0.001f && a2->getActorType() == ActorType_Particle)
+								c.createdActors.push_back(a2);
+						}
+					}
+					eulerIntegrator.evalIntegrator(dt, c);
+					c.createdActors.clear();
+				}
+			}
+		}
+	}
+
+	for(size_t threadIndex = 0u; threadIndex < m_maxNumThreads; ++threadIndex)
+	{
+		for(size_t i = 0u; i < m_threadRemoveBufferIndex[threadIndex]; ++i)
+		{
+			size_t index = m_threadRemoveBuffers[threadIndex][i];
+			Actor* a = m_actors[index].actor;
+			if(a->getActorType() == ActorType_Particle)
+			{
 				a->~Actor();
 				m_particlePool->release((unsigned char*) a);
 			}
 			else
 			{
-				rkIntegrator.evalIntegrator(dt, c);
-				m_actors[i].actor->updateStateFromBuffer();
+				delete a;
 			}
+			m_actors[index].actor = nullptr;
+			m_freeContainerIndices.push_back(index);
+		}
+		m_threadRemoveBufferIndex[threadIndex] = 0;
 	}
-		//std::cout << m_actors.size() << std::endl;
+
+	#pragma omp parallel
+	{
+		#pragma omp for nowait
+		//s#pragma vector aligned
+		for(int i = 2u; i < m_actors.size(); ++i)
+		{
+			if(!m_actors[i].isActive())
+				continue;
+
+			Actor* a = m_actors[i].actor;
+			a->updateStateFromBuffer();
+			a->resetStateBuffer();
+		}
+	}
+	//std::cout << m_actors.size() << "/" << m_actors.getCapacity() << std::endl;
 }
 
 void System::draw(const float scale)
@@ -288,7 +389,7 @@ void System::updateMesh()
 	renderer.clearDynamicMesh();
 	for(auto& i : m_actors)
 	{
-		if(i.activeFlag)
+		if(i.isActive())
 			i.actor->draw(renderer);
 	}
 }
