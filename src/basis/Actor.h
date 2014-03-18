@@ -63,7 +63,6 @@ public:
 		m_lifetime(lifetime),
 		m_timer(0.0f)
 	{
-		m_vortexStr = FW::Random().getVec3f(.0f, 1.0f);
 	}
 	virtual ~Actor() {}
 
@@ -87,7 +86,7 @@ public:
 
 	virtual float getTimer() const { return m_timer; }
 	virtual float getLifetime() const { return m_lifetime; }
-	virtual FW::Vec3f getVortexStr() const { return m_vortexStr; }
+	virtual FW::Vec3f getVortexStr() const { return FW::Vec3f(); }
 	virtual void activeVortexVisible()  { m_hasVortexEffect = true; }
 	virtual void resetVortexVisible() { m_hasVortexEffect = false; }
 
@@ -95,7 +94,6 @@ protected:
 
 	State		m_state;
 	State		m_stateBuffer;
-	FW::Vec3f	m_vortexStr;
 	ActorType	m_type;
 	float		m_lifetime;
 	float		m_timer;
@@ -107,13 +105,15 @@ template<typename System>
 class Particle : public Actor
 {
 public:
-	Particle(const float mass, const FW::Vec3f& p, const FW::Vec3f& v, const float lifetime, ActorType type = ActorType_Particle) :
+	Particle(const float mass, const FW::Vec3f& p, const FW::Vec3f& v, const float lifetime, bool vortexEnabled = false, ActorType type = ActorType_Particle) :
 		m_mass(mass),
 		m_invertMass(1.0f/mass),
 		Actor(type, lifetime)
 	{
 		setState(State(p, v));
 		setStateBuffer(m_state);
+		if(vortexEnabled)
+			m_vortexStr = FW::Random().getF32(.0f, 1.f);
 	}
 
 	virtual ~Particle() {}
@@ -128,8 +128,10 @@ public:
 	
 	virtual StateEval evalF(const float, const State&,ActorContainer&);
 	virtual void draw(Renderer& renderer);
+	virtual float getVortexStr() { return m_vortexStr; }
 
 protected:
+	float m_vortexStr;
 	float m_mass;
 	float m_invertMass;
 };
@@ -178,11 +180,6 @@ public:
 						vel += FW::Vec3f((d.z*str.y - d.y*str.z),(d.x*str.z-d.z*str.x),(d.y*str.x-d.x*str.y));
 					else
 						vel -= FW::Vec3f((d.z*str.y - d.y*str.z),(d.x*str.z-d.z*str.x),(d.y*str.x-d.x*str.y));
-					/*if(m_vortexDir)
-						vel += FW::Vec3f((d.z*str.y - d.y*str.z),.0f,(d.y*str.x-d.x*str.y));
-					else
-						vel -= FW::Vec3f((d.z*str.y - d.y*str.z),.0f,(d.y*str.x-d.x*str.y));
-					*/
 				}
 			}
 			FW::Vec3f eval = dt*(vel.normalized()*(.01f * currentLenght*invSize*invCubeDistToVortex));
@@ -278,7 +275,7 @@ public:
 			}
 			else
 			{
-				Particle<System>* particle = new (((MemPool*) c.data1)->alloc()) Particle<System>(1.0f,p,FW::Vec3f(1.0f, 0.0f, 0.0f),m_lifetimeOfParticles);			
+				Particle<System>* particle = new (((MemPool*) c.data1)->alloc()) Particle<System>(1.0f,p,FW::Vec3f(1.0f, 0.0f, 0.0f),m_lifetimeOfParticles, true);			
 				c.createdActors.push_back(particle);
 			}
 			tmp -= m_timeBetween;
@@ -332,10 +329,8 @@ class SquareVortexEmitter : public PlaneEmitter
 {
 public:
 	SquareVortexEmitter(const FW::Vec3f& posA, const FW::Vec3f& posB, const FW::Vec3f& posC,
-		const float timeBetweenParticles, const float particleLifetime, const float change, const float startDistance) :
+		const float timeBetweenParticles, const float particleLifetime, const float startDistance) :
 	PlaneEmitter(posA, posB, posC, 0.0f, 1.0f, timeBetweenParticles, particleLifetime, 0.0f, false),
-		m_change(.5f),
-		m_stepSize(2.0f),
 		m_startDistance(startDistance),
 		m_stepper(1.f)
 	{
@@ -349,7 +344,7 @@ public:
 		while(tmp >= m_timeBetween)
 		{
 			float r3 = m_randomGen.getF32(0,1.0f);
-			if(r3 < m_change)
+			if(r3 < .5f)
 			{
 				FW::Vec2f r1 = m_randomGen.getVec2f(0,1.0f);
 				FW::Vec3f p = m_posA + r1.x*(m_posB - m_posA) + r1.y*(m_posC - m_posA);
@@ -364,7 +359,7 @@ public:
 			}
 			else
 			{
-				m_stepper *= m_stepSize;
+				m_stepper *= 2.f;
 			}
 			tmp -= m_timeBetween;
 		}

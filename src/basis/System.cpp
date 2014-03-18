@@ -136,7 +136,7 @@ FlowSystem::FlowSystem() :
 	m_actors.push_back(c);
 	
 	ActorContainer c2 = ActorContainer(m_particlePool, nullptr);
-	c2.actor = new SquareVortexEmitter<FlowSystem>(FW::Vec3f(0.01f, .0f, .0f), FW::Vec3f(0.01f, .0f, -1.f), FW::Vec3f(0.01f, -0.5f, 0.0f), time2, 5.0f, .25f, 1.f);
+	c2.actor = new SquareVortexEmitter<FlowSystem>(FW::Vec3f(0.01f, .0f, .0f), FW::Vec3f(0.01f, .0f, -1.f), FW::Vec3f(0.01f, -0.5f, 0.0f), time2, 5.0f, 1.f);
 	c2.status = ActorContainer::ActiveStatus_Active;
 	m_actors.push_back(c2);
 }
