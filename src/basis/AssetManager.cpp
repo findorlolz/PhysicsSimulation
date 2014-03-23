@@ -26,3 +26,9 @@ FW::MeshBase* AssetManager::importMesh(const std::string& fileName)
         std::string filePath = "assets/meshes/" + fileName;
         return FW::importMesh(filePath.c_str());
 }
+
+void AssetManager::exportMesh(const const std::string& fileName, FW::MeshBase* mesh)
+{
+	std::string filePath = "assets/meshes/export/" + fileName;
+    return FW::exportMesh(filePath.c_str(), mesh);
+}

@@ -24,7 +24,8 @@ App::App( void ) :
 	m_commonCtrl.addSeparator();
 	m_commonCtrl.addButton((S32*)&m_action, Action_ToggleCameraCtrlVisibility, FW_KEY_F2, "Toggle visibility of camera controls");
 	m_commonCtrl.addButton((S32*)&m_action, Action_EnableCamera, FW_KEY_F1, "Enable/Disable camera movements");
-	m_commonCtrl.addButton((S32*)&m_action, Action_ToggleAxis, FW_KEY_F3, "Tpggle visibility of axis");
+	m_commonCtrl.addButton((S32*)&m_action, Action_ToggleAxis, FW_KEY_F3, "Toggle visibility of axis");
+	m_commonCtrl.addButton((S32*)&m_action, Action_ExportDynamicMesh, FW_KEY_M, "Export resulted mesh...");
 	m_commonCtrl.addSeparator();
 	m_commonCtrl.addButton((S32*)&m_action, Action_StartParticleSystem, FW_KEY_1, "Create new particles system" );
 	m_commonCtrl.addButton((S32*)&m_action, Action_StartBoidSystem, FW_KEY_2, "Create new boid system" );
@@ -102,6 +103,12 @@ bool App::handleEvent( const Window::Event& event )
 	case Action_ToggleAxis:
 		m_commonCtrl.message("Toggle visibility of axis");
 		Renderer::get().toggleAxis();
+		break;
+
+	case Action_ExportDynamicMesh:
+		m_commonCtrl.message("Exporting dynamic mesh...");
+		Renderer::get().exportDynamicMesh();
+		m_commonCtrl.message("Exporting dynamic mesh... Done!");
 		break;
 
 	case Action_StartParticleSystem:

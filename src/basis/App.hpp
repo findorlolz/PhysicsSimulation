@@ -20,7 +20,8 @@ private:
 		Action_StartParticleSystem,
 		Action_StartBoidSystem,
 		Action_StartFlowSystem,
-		Action_ToggleAxis
+		Action_ToggleAxis,
+		Action_ExportDynamicMesh
 	};
 
 public:

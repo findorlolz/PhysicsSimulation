@@ -124,19 +124,19 @@ FlowSystem::FlowSystem() :
 	
 	m_particlePool = new MemPool();
 	const float time = 0.01f;
-	const float time2 = .5f;
+	const float time2 = .1f;
 	m_numParticles = 15000;
 	m_actors.reserve(m_numParticles);
 
 	m_particlePool->startUp(sizeof(Particle<FlowSystem>),  m_numParticles);
 
 	ActorContainer c = ActorContainer(m_particlePool, nullptr);
-	c.actor = new SquareEmitter<FlowSystem>(FW::Vec3f(0.01f, .0f, .0f), FW::Vec3f(0.01f, 1.f, .0f), FW::Vec3f(0.01f, .0f, 1.f),time, 5.0f, 1.0f, false);
+	c.actor = new SquareEmitter<FlowSystem>(FW::Vec3f(0.01f, -1.f, -1.f), FW::Vec3f(0.01f, 1.f, -1.f), FW::Vec3f(0.01f, -1.f, 1.f),time, 15.0f, 1.0f, false);
 	c.status = ActorContainer::ActiveStatus_Active;
 	m_actors.push_back(c);
 	
 	ActorContainer c2 = ActorContainer(m_particlePool, nullptr);
-	c2.actor = new SquareVortexEmitter<FlowSystem>(FW::Vec3f(0.01f, .0f, .0f), FW::Vec3f(0.01f, .0f, -1.f), FW::Vec3f(0.01f, -0.5f, 0.0f), time2, 5.0f, 1.f);
+	c2.actor = new SquareVortexEmitter<FlowSystem>(FW::Vec3f(0.01f, -1.f, -1.f), FW::Vec3f(0.01f, 1.f, -1.f), FW::Vec3f(0.01f, -1.f, 1.f), time2, 15.0f, .5f);
 	c2.status = ActorContainer::ActiveStatus_Active;
 	m_actors.push_back(c2);
 }
@@ -146,6 +146,7 @@ FlowSystem::~FlowSystem()
 	delete m_flow;
 
 	for(auto i : m_actors)
+	{
 		if(i.isActive())
 		{
 			if(i.actor->getActorType() != ActorType_Particle)
@@ -153,6 +154,9 @@ FlowSystem::~FlowSystem()
 			else
 				i.actor->~Actor();
 		}
+	}
+	
+	for(auto i : m_vortexList) { delete i; }
 
 	for( auto i = 0u; i < m_maxNumThreads; i++ ) delete[] m_threadRemoveBuffers[i];
 	delete m_threadRemoveBuffers;
@@ -256,10 +260,9 @@ void FlowSystem::evalSystem(const float dt)
 	EulerIntegrator eulerIntegrator  = EulerIntegrator::get();
 	Runge_KuttaIntegrator rkIntegrator = Runge_KuttaIntegrator::get();
 	
-	size_t index = 0u;
-	while(index < 2)
+	//Particles
 	{
-		ActorContainer& c = m_actors[index];
+		ActorContainer& c = m_actors[0];
 		eulerIntegrator.evalIntegrator(dt, c);
 	
 		while(!c.createdActors.empty())
@@ -275,23 +278,72 @@ void FlowSystem::evalSystem(const float dt)
 			}
 			else
 			{
-				ActorContainer c = ActorContainer(m_particlePool, m_flow);
-				c.status = ActorContainer::ActiveStatus_Active;
-				c.actor = a;
-				m_actors.push_back(c);
+				ActorContainer cNew = ActorContainer(m_particlePool, m_flow);
+				cNew.status = ActorContainer::ActiveStatus_Active;
+				cNew.actor = a;
+				m_actors.push_back(cNew);
 			}
 		}
-		index++;
 	}
 
+	//Just for debuging, reset colors
 	#pragma omp parallel
 	{
 		#pragma omp for
-		//#pragma vector aligned
 		for(int i = 2u; i < m_actors.size(); ++i)
 		{
 			if(m_actors[i].isActive())
+			{
 				m_actors[i].actor->resetVortexVisible();
+				m_actors[i].createdActors.clear();
+			}
+		}
+	}
+
+	//Vortexes
+	{	
+		//Create new vortexes
+		ActorContainer& c = m_actors[1];
+		eulerIntegrator.evalIntegrator(dt, c);
+		while(!c.createdActors.empty())
+		{					
+			Actor* a = c.createdActors.back();
+			c.createdActors.pop_back();
+			m_vortexList.push_back(a);
+		}
+		//Update existing vortexes
+		auto iter = m_vortexList.begin();
+		ActorContainer tmp = ActorContainer(nullptr, m_flow);
+		while(iter != m_vortexList.end())
+		{
+			Vortex<FlowSystem>* a = (Vortex<FlowSystem>*) *iter;
+			if(a->isDone())
+			{
+				iter = m_vortexList.erase(iter);
+				delete a;
+			}
+			else
+			{
+				a->clearEffectedActor();
+				for(auto j = 2u; j < m_actors.size(); ++j)
+				{
+					if(m_actors[j].isActive())
+					{
+						Actor* a2 = m_actors[j].actor;
+						float d = (a2->getPos() - a->getPos()).length();
+						float inf = a->getInfluenceDistance();
+						if(d < inf && d > 0.001f && d > .01f * inf)
+						{
+							a->addEffectedActor(a2);
+							a2->activeVortexVisible();
+							m_actors[j].createdActors.push_back((Actor*) a);
+						}
+					}
+				}
+				tmp.actor = a;
+				eulerIntegrator.evalIntegrator(dt, tmp);
+				iter++;
+			}
 		}
 	}
 
@@ -314,26 +366,7 @@ void FlowSystem::evalSystem(const float dt)
 			}
 			else
 			{
-				if(a->getActorType() == ActorType_Particle)
-				{
-					rkIntegrator.evalIntegrator(dt, c);
-				}
-				else
-				{
-					for(int j = 2u; j < m_actors.size(); ++j)
-					{
-						if(m_actors[j].isActive())
-						{
-							Actor* a2 = m_actors[j].actor;
-							float d = (a2->getPos() - a->getPos()).length();
-							float inf = a->getInfluenceDistance();
-							if(d < inf && d > 0.001f && a2->getActorType() == ActorType_Particle)
-								c.createdActors.push_back(a2);
-						}
-					}
-					eulerIntegrator.evalIntegrator(dt, c);
-					c.createdActors.clear();
-				}
+				rkIntegrator.evalIntegrator(dt, c);
 			}
 		}
 	}
@@ -373,7 +406,6 @@ void FlowSystem::evalSystem(const float dt)
 			a->resetStateBuffer();
 		}
 	}
-	//std::cout << m_actors.size() << "/" << m_actors.getCapacity() << std::endl;
 }
 
 void System::draw(const float scale)

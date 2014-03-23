@@ -100,6 +100,7 @@ public:
 private:
 	std::vector<size_t> m_freeContainerIndices;
 	FlowControl* m_flow;
+	std::vector<Actor*> m_vortexList;
 	MemPool* m_particlePool;
 	size_t** m_threadRemoveBuffers;
 	size_t* m_threadRemoveBufferIndex;

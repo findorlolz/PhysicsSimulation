@@ -34,6 +34,7 @@ public:
 		void drawTriangleToCameraTest(const FW::Vec3f&);
 
 		void clearDynamicMesh();
+		void exportDynamicMesh();
 
 private:
 		FW::Mesh<FW::VertexPNC> m_dynamicMesh;

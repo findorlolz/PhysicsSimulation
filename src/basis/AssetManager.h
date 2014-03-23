@@ -26,11 +26,11 @@ public:
         void ReleaseAssets();
 
         FW::MeshBase* getMesh(MeshType meshType);
+		void exportMesh(const const std::string& fileName, FW::MeshBase*);
 
 private:
         FW::MeshBase* importMesh(const std::string& fileName);
 
-private:
         FW::MeshBase* m_meshes[MeshType_Count];
 
 };

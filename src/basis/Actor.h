@@ -76,6 +76,7 @@ public:
 	virtual void addToStateBuffer(const State&s) { m_stateBuffer.pos += s.pos; m_stateBuffer.vel += s.vel; }
 	virtual void addToBufferPosition(const FW::Vec3f& v) { m_stateBuffer.pos += v; };
 	virtual void updateStateFromBuffer() { setState(m_stateBuffer); }
+	virtual void checkSpeedFromBuffer();
 	virtual void resetStateBuffer() { setStateBuffer(zeroState); }
 	
 	virtual void setTime(const float dt) { m_timer += dt; }
@@ -86,7 +87,7 @@ public:
 
 	virtual float getTimer() const { return m_timer; }
 	virtual float getLifetime() const { return m_lifetime; }
-	virtual FW::Vec3f getVortexStr() const { return FW::Vec3f(); }
+	virtual float getVortexStr() const { return .0f; }
 	virtual void activeVortexVisible()  { m_hasVortexEffect = true; }
 	virtual void resetVortexVisible() { m_hasVortexEffect = false; }
 
@@ -128,7 +129,7 @@ public:
 	
 	virtual StateEval evalF(const float, const State&,ActorContainer&);
 	virtual void draw(Renderer& renderer);
-	virtual float getVortexStr() { return m_vortexStr; }
+	virtual float getVortexStr() const { return m_vortexStr; }
 
 protected:
 	float m_vortexStr;
@@ -153,39 +154,37 @@ public:
 
 	virtual ~Vortex() {}
 	virtual FW::Vec3f getPos() const { return m_carrier->getPos(); }
+	virtual void updateStateFromBuffer() { setState(m_stateBuffer); m_effectedActors.clear(); }
+	virtual void addEffectedActor(Actor* a) { m_effectedActors.push_back(a); }
+	virtual void clearEffectedActor() { m_effectedActors.clear(); }
+	virtual FW::Vec3f getVortexSpeed(Actor* a) 
+	{
+		FW::Vec3f pos = m_carrier->getPos();
+		FW::Vec3f vel;
+		FW::Vec3f toVortex = pos - a->getPos();
+		float distToVortex = toVortex.length();
+		float invCubeDistToVortex = 1.0f/(distToVortex*distToVortex*distToVortex);
+		FW::Vec3f currentVel = m_carrier->getState().vel;
+		float currentLenght = currentVel.length();
+		for(auto j : m_effectedActors)
+		{
+			FW::Vec3f d = a->getPos() - j->getPos();
+			FW::Vec3f str = j->getVortexStr();
+			float dist_squared = d.x*d.x+d.y*d.y+d.z*d.z;
+			dist_squared += rad_squared;
+			float dist = FW::sqrt(dist_squared);
+			float factor = 1.0f/(dist_squared*dist);
+			d *= factor;
+			if(m_vortexDir)
+				vel += FW::Vec3f((d.z*str.y - d.y*str.z),(d.x*str.z-d.z*str.x),(d.y*str.x-d.x*str.y));
+			else
+				vel -= FW::Vec3f((d.z*str.y - d.y*str.z),(d.x*str.z-d.z*str.x),(d.y*str.x-d.x*str.y));
+		}
+		return (vel.normalized()*(.0001f * currentLenght*invCubeDistToVortex));
+	}
 
 	virtual StateEval evalF(const float dt, const State& current, ActorContainer& c)
 	{
-		float invSize = 1.0f/((float) c.createdActors.size());
-		FW::Vec3f pos = m_carrier->getPos();
-		for(auto i : c.createdActors)
-		{
-			i->activeVortexVisible();
-			FW::Vec3f vel;
-			float distToVortex = (pos-i->getPos()).length();
-			float invCubeDistToVortex = 1.0f/(distToVortex*distToVortex*distToVortex);
-			float currentLenght = m_carrier->getState().vel.length();
-			for(auto j : c.createdActors)
-			{
-				if(i != j)
-				{
-					FW::Vec3f str = j->getVortexStr();
-					FW::Vec3f d = i->getPos() - j->getPos();
-					float dist_squared = d.x*d.x+d.y*d.y+d.z*d.z;
-					dist_squared += rad_squared;
-					float dist = FW::sqrt(dist_squared);
-					float factor = 1.0f/(dist_squared*dist);
-					d *= factor;
-					if(m_vortexDir)
-						vel += FW::Vec3f((d.z*str.y - d.y*str.z),(d.x*str.z-d.z*str.x),(d.y*str.x-d.x*str.y));
-					else
-						vel -= FW::Vec3f((d.z*str.y - d.y*str.z),(d.x*str.z-d.z*str.x),(d.y*str.x-d.x*str.y));
-				}
-			}
-			FW::Vec3f eval = dt*(vel.normalized()*(.01f * currentLenght*invSize*invCubeDistToVortex));
-			i->addToBufferPosition(eval*((FlowControl*)c.data2)->getFlowSpeed());
-		}
-
 		Runge_KuttaIntegrator integrator = Runge_KuttaIntegrator::get();
 		integrator.evalIntegrator(dt, m_carrier, c);
 		m_carrier->updateStateFromBuffer();
@@ -195,6 +194,7 @@ public:
 	virtual void draw(Renderer& renderer);
 
 private:
+	std::vector<Actor*> m_effectedActors;
 	FW::Vec3f m_vortexStrVector;
 	Particle<System>* m_carrier;
 	bool m_vortexDir;
@@ -353,7 +353,7 @@ public:
 				if(r4 > .5)
 					dir = false;
 				FW::Vec3f str = m_randomGen.getVec3f(.0f, 1.0f);
-				Actor* a = new Vortex<System>(p, FW::Vec3f(1.0f, .0f, .0f), dir, m_lifetimeOfParticles, m_stepper * m_startDistance, str * m_stepper);
+				Actor* a = new Vortex<System>(p, FW::Vec3f(1.0f, .0f, .0f), dir, m_lifetimeOfParticles, m_startDistance, str * m_stepper);
 				c.createdActors.push_back(a);
 				m_stepper = 1.f;
 			}
@@ -368,8 +368,6 @@ public:
 	}
 
 private:
-	float m_change;
-	float m_stepSize;
 	float m_stepper;
 	float m_startDistance;
 };
@@ -452,8 +450,5 @@ void ParticleEmitter<System>::draw(Renderer& renderer)
 template<typename System>
 void Vortex<System>::draw(Renderer& renderer)
 {
-	if(!m_hasVortexEffect)
-		renderer.drawTriangleToCamera(m_carrier->getPos(), FW::Vec4f(1.0f, 0.0f, 0.0f, 1.0f));
-	else
-		renderer.drawTriangleToCamera(m_carrier->getPos(), FW::Vec4f(1.0f, .0f, 1.0f, 1.0f));
+	renderer.drawTriangleToCamera(m_carrier->getPos(), FW::Vec4f(1.0f, .0f, .0f, 1.0f));
 }

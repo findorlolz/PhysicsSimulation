@@ -45,6 +45,11 @@ void Renderer::clearDynamicMesh()
 	m_dynamicMesh.addSubmesh();
 }
 
+void Renderer::exportDynamicMesh()
+{
+	m_assetManager->exportMesh("dynamicMesh.obj", &m_dynamicMesh);
+}
+
 void Renderer::endFrame()
 {
 	m_dynamicMesh.draw(m_context, m_worldToCamera, m_projection);

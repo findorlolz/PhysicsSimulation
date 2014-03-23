@@ -37,10 +37,21 @@ template<>
 StateEval Particle<FlowSystem>::evalF(const float dt, const State& current, ActorContainer& c)
 {
 	StateEval next = StateEval();
-	FW::Vec3f speed = ((FlowControl*) c.data2)->getSpeed(current.pos, dt) + FW::Vec3f(.0f, -.1, .0f);
+	FlowControl* flow = (FlowControl*) c.data2;
+	FW::Vec3f speed = flow->getSpeed(current.pos, dt);
 	if (speed == FW::Vec3f())
 		m_lifetime = 0.0f;
+	for(auto iter : c.createdActors)
+	{
+		speed += (((Vortex<FlowSystem>*) iter)->getVortexSpeed(this) * flow->getFlowSpeed());
+	}
 	next.dx = speed * dt;
 	next.dv = speed;
 	return next;
+}
+
+void Actor::checkSpeedFromBuffer()
+{
+	FW::Vec3f d = (m_stateBuffer.pos - m_state.pos).normalized();
+	m_state.pos += d * m_state.vel.length();
 }
