@@ -22,7 +22,7 @@ ParticleSystem::ParticleSystem(const float minSpeed, const float maxSpeed, const
 	m_threadRemoveBufferIndex = new size_t[m_maxNumThreads];
 	for( auto i = 0u; i < m_maxNumThreads; i++ ) m_threadRemoveBufferIndex[i] = 0;
 
-	Renderer::get().initStaticMeshRenderer(m_indices, m_triangles, m_triangleToMeshData, MeshType_Teapot);
+	Renderer::get().initStaticMeshRenderer(m_indices, m_triangles, m_triangleToMeshData, MeshType_Cube);
 	
 	m_numParticleEmitters = 0u;
 	m_numParticles = 0u;
