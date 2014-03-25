@@ -10,6 +10,7 @@ class ActorContainer;
 class State;
 class MemPool;
 class FlowControl;
+class RayTracer;
 struct Triangle;
 struct TriangleToMeshData;
 
@@ -56,6 +57,8 @@ protected:
 	std::vector<FW::Vec3f> m_indices;
 	std::vector<Triangle> m_triangles;
 	std::vector<TriangleToMeshData> m_triangleToMeshData;
+	RayTracer* m_rt;
+	
 };
 
 class ParticleSystem : public System

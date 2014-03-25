@@ -61,6 +61,20 @@ public:
 	void set(FW::Vec3f& mi, FW::Vec3f& ma) {min = mi, max = ma; }
 };
 
+struct Hit
+{
+	Hit(float tMax) : 
+	i(0u), t(tMax), u(0.0f), v(0.0f), b(false) {}
+
+	FW::Vec3f intersectionPoint;
+	Triangle triangle;
+	size_t i;
+	float t;
+	float u;
+	float v;
+	bool b;
+};
+
 inline static int indexBasedOnFloat(const float size, float value, float& d)
 {
 	int i = 0;

@@ -30,14 +30,9 @@ public:
 	/*void				RayTracer::saveHierarchy			(const char* filename, const std::vector<Triangle>& triangles);
 	void				RayTracer::loadHierarchy			(const char* filename, std::vector<Triangle>& triangles);
 	*/
-	//bool				rayCast					(Vec3f& orig, Vec3f& dir, Hit& closestHit);
+	bool				rayCast					(FW::Vec3f& orig, FW::Vec3f& dir, Hit& closestHit, const float = .0f);
 	bool			    rayCastAny				(FW::Vec3f& orig, FW::Vec3f& dir);
-
-	// This function computes an MD5 checksum of the input scene data,
-	// WITH the assumption all vertices are allocated in one big chunk.
-	static FW::String	computeMD5				(const std::vector<FW::Vec3f>& vertices);
-
-
+	
 	std::vector<Triangle>*		m_triangles;
 
 private:

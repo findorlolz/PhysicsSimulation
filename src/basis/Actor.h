@@ -76,7 +76,6 @@ public:
 	virtual void addToStateBuffer(const State&s) { m_stateBuffer.pos += s.pos; m_stateBuffer.vel += s.vel; }
 	virtual void addToBufferPosition(const FW::Vec3f& v) { m_stateBuffer.pos += v; };
 	virtual void updateStateFromBuffer() { setState(m_stateBuffer); }
-	virtual void checkSpeedFromBuffer();
 	virtual void resetStateBuffer() { setStateBuffer(zeroState); }
 	
 	virtual void setTime(const float dt) { m_timer += dt; }
@@ -90,6 +89,9 @@ public:
 	virtual float getVortexStr() const { return .0f; }
 	virtual void activeVortexVisible()  { m_hasVortexEffect = true; }
 	virtual void resetVortexVisible() { m_hasVortexEffect = false; }
+	
+	virtual FW::Vec3f getDxBetweenStateAndBuffer() { return (m_stateBuffer.pos - m_state.pos); }
+	virtual void collisionEffect(const Hit&);
 
 protected:
 

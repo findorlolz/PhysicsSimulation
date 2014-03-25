@@ -84,6 +84,7 @@ void RayTracer::saveRec(FILE* file, Node*node)
 */
 void RayTracer::constructHierarchy( std::vector<Triangle>& triangles)
 {
+	std::cout << "Creating RayTracer Hieracrhy... ";
 	m_triangles = &triangles;
 	m_numPrism = triangles.size() - 1;
 	RayTracer::createIndexList();
@@ -91,6 +92,7 @@ void RayTracer::constructHierarchy( std::vector<Triangle>& triangles)
 	m_root = new Node();
 	constructTree(0, m_numPrism, m_root);
 	RayTracer::demolishBBForTriangles();
+	std::cout << "done!" << std::endl;
 }
 
 bool RayTracer::rayCastAny(FW::Vec3f& orig, FW::Vec3f& dir )
@@ -302,26 +304,26 @@ void RayTracer::demolishTree(Node* node)
 
 }
 
-/*
-bool RayTracer::rayCast(Vec3f& orig, Vec3f& dir, Hit& closestHit)
+
+bool RayTracer::rayCast(FW::Vec3f& orig, FW::Vec3f& dir, Hit& closestHit, const float d)
 {
 	Node* current = m_root;
 	
 	//Basic recursion traverse test
 	//RayTracer::basicTraverseTest(orig, dir, closestHit, current);
 
-	Vec3f dirInv = 1.0f/(dir);
+	FW::Vec3f dirInv = 1.0f/(dir);
 	Node* stack[128];
-	int stackPointer = 0;
+	size_t stackPointer = 0;
 
 	while (true)
 	{
 		bool intersection = intersect_bb(&orig.x, &dirInv.x, &(current->BBMin.x), &(current->BBMax.x), closestHit.t);	
-		if (intersection) // check if intersect with current
+		if (intersection)
 		{
-			if(isLeaf(current)) // current is leaf node => process primitives
+			if(isLeaf(current))
 			{
-				for ( size_t i = current->startPrim; i <= current->endPrim; ++i)
+				for (size_t i = current->startPrim; i <= current->endPrim; ++i)
 				{
 					float t, u, v;
 					if ( intersect_triangle1( &orig.x, &dir.x,
@@ -332,10 +334,11 @@ bool RayTracer::rayCast(Vec3f& orig, Vec3f& dir, Hit& closestHit)
 					{
 						if ( t > 0.0f && t < closestHit.t )
 						{
-							closestHit.i = m_indexList[(int)i]; //index of triangle pointer at m_triangle
+							closestHit.i = m_indexList[i];
 							closestHit.t = t;
 							closestHit.u = u;
 							closestHit.v = v;
+							closestHit.b = true;
 						}
 					}
 				}
@@ -384,7 +387,7 @@ bool RayTracer::rayCast(Vec3f& orig, Vec3f& dir, Hit& closestHit)
 	}				//while-loop
 	
 	//std::cout << "end" <<std::endl;
-	if( closestHit.i != -1 )
+	if(closestHit.b)
 	{
 		closestHit.intersectionPoint = orig + closestHit.t*dir;
 		closestHit.triangle = (*m_triangles)[closestHit.i];
@@ -392,7 +395,7 @@ bool RayTracer::rayCast(Vec3f& orig, Vec3f& dir, Hit& closestHit)
 	}
 	else 
 		return false;
-}*/
+}
 
 bool RayTracer::isLeaf(Node* node)
 {

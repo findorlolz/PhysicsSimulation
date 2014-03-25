@@ -50,8 +50,12 @@ StateEval Particle<FlowSystem>::evalF(const float dt, const State& current, Acto
 	return next;
 }
 
-void Actor::checkSpeedFromBuffer()
+void Actor::collisionEffect(const Hit& hit)
 {
-	FW::Vec3f d = (m_stateBuffer.pos - m_state.pos).normalized();
-	m_state.pos += d * m_state.vel.length();
+	FW::Vec3f normal = FW::cross((*(hit.triangle.m_vertices[1]) - *(hit.triangle.m_vertices[0])), (*(hit.triangle.m_vertices[2]) - *(hit.triangle.m_vertices[0])));
+	normal = normal.normalized();
+	m_stateBuffer.pos = hit.intersectionPoint + normal * .001f;
+	FW::Vec3f L = m_stateBuffer.vel * -1.f;
+	FW::Vec3f newVel = normal * 2 * FW::dot(normal, L) - L;
+	m_stateBuffer.vel = newVel; 
 }

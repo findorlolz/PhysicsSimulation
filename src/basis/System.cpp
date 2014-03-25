@@ -4,6 +4,7 @@
 #include "Actor.h"
 #include "Memory.h"
 #include "FlowGrid.h"
+#include "RayTracer.h"
 
 System::~System() 
 {
@@ -23,6 +24,8 @@ ParticleSystem::ParticleSystem(const float minSpeed, const float maxSpeed, const
 	for( auto i = 0u; i < m_maxNumThreads; i++ ) m_threadRemoveBufferIndex[i] = 0;
 
 	Renderer::get().initStaticMeshRenderer(m_indices, m_triangles, m_triangleToMeshData, MeshType_Cube);
+	m_rt = new RayTracer();
+	m_rt->constructHierarchy(m_triangles);
 	
 	m_numParticleEmitters = 0u;
 	m_numParticles = 0u;
@@ -270,7 +273,13 @@ void ParticleSystem::evalSystem(const float dt)
 	{
 		if(m_actors[i].isActive())
 		{
-			m_actors[i].actor->updateStateFromBuffer();
+			Actor* a = m_actors[i].actor;
+			FW::Vec3f dx = a->getDxBetweenStateAndBuffer();
+			const float d = dx.length();
+			Hit hit = Hit(d);
+			if(m_rt->rayCast(a->getPos(), dx.normalized(), hit))
+				a->collisionEffect(hit);
+			a->updateStateFromBuffer();
 		}
 	}
 }
