@@ -21,6 +21,8 @@ ParticleSystem::ParticleSystem(const float minSpeed, const float maxSpeed, const
 	for( auto i = 0u; i < m_maxNumThreads; i++ ) m_threadCreateBufferIndex[i] = 0;
 	m_threadRemoveBufferIndex = new size_t[m_maxNumThreads];
 	for( auto i = 0u; i < m_maxNumThreads; i++ ) m_threadRemoveBufferIndex[i] = 0;
+
+	Renderer::get().initStaticMeshRenderer(m_indices, m_triangles, m_triangleToMeshData, MeshType_Teapot);
 	
 	m_numParticleEmitters = 0u;
 	m_numParticles = 0u;
@@ -40,6 +42,8 @@ ParticleSystem::ParticleSystem(const float minSpeed, const float maxSpeed, const
 		time -= timeBetweenParticles;
 	}
 
+	m_numParticles *= m_triangles.size() + 1;
+
 	m_actors.reserve(m_numParticles + m_numParticleEmitters);
 	m_particlePool = new MemPool();
 	m_particlePool->startUp(sizeof(Particle<ParticleSystem>), m_numParticles + (m_numParticles/10));
@@ -52,10 +56,13 @@ ParticleSystem::ParticleSystem(const float minSpeed, const float maxSpeed, const
 	std::cout << "sizeof std::vector<Actor*> " << sizeof(nsVector<Actor*>) << std::endl;
 	std::cout << "sizeof ActorContainer " << sizeof(ActorContainer) << std::endl;
 	
-	ActorContainer c = ActorContainer(m_particlePool, m_particleEmitterPool);
-	c.actor = new TriangleEmitter<ParticleSystem>(FW::Vec3f(1,0,0),FW::Vec3f(0,0,0), FW::Vec3f(0,0,1), minSpeed, maxSpeed, timeBetweenParticles, particleLifeTime, particleMass, true);
-	c.status = ActorContainer::ActiveStatus_Active;
-	m_actors.push_back(c);
+	for(auto i = 0u; i < m_triangles.size(); ++i)
+	{
+		ActorContainer c = ActorContainer(m_particlePool, m_particleEmitterPool);
+		c.actor = new TriangleEmitter<ParticleSystem>(*m_triangles[i].m_vertices[0], *m_triangles[i].m_vertices[1], *m_triangles[i].m_vertices[2], minSpeed, maxSpeed, timeBetweenParticles/m_triangles.size(), particleLifeTime, particleMass, false);
+		c.status = ActorContainer::ActiveStatus_Active;
+		m_actors.push_back(c);
+	}
 }
 
 void ParticleSystem::estimateParticleNumRec(float lifetime, const float timeBetween)
@@ -71,26 +78,34 @@ ParticleSystem::~ParticleSystem()
 {
 	Runge_KuttaIntegrator::get().setAddToBuffer(false);
 
-	for( auto i = 0u; i < m_maxNumThreads; i++ ) delete[] m_threadRemoveBuffers[i];
+	for( auto i = 0u; i < m_maxNumThreads; i++ )
+		delete[] m_threadRemoveBuffers[i];
+	for( auto i = 0u; i < m_maxNumThreads; i++ )
+		delete[] m_threadCreateBuffers[i];
+
 	delete[] m_threadRemoveBuffers;
-	for( auto i = 0u; i < m_maxNumThreads; i++ ) delete[] m_threadCreateBuffers[i];
 	delete[] m_threadCreateBuffers;
 	delete[] m_threadCreateBufferIndex;
 	delete[] m_threadRemoveBufferIndex;
 	
-	for(auto i : m_actors)
-		if(i.isActive())
+	for(auto i = 0u; i < m_actors.size(); ++i)
+	{
+		Actor* a = m_actors[i].actor;
+		if(m_actors[i].isActive())
 		{
-			if(i.actor->getActorType() != ActorType_Particle && i.actor->getActorType() != ActorType_ParticleEmitter)
-				delete i.actor;
+			if(a->getActorType() != ActorType_Particle && a->getActorType() != ActorType_ParticleEmitter)
+				delete a;
 			else
-				i.actor->~Actor();
+				a->~Actor();
 		}
+	}
 
 	m_particleEmitterPool->shutDown();
 	delete m_particleEmitterPool;
 	m_particlePool->shutDown();
 	delete m_particlePool;
+
+	Renderer::get().clearStaticMeshRenderer();
 }
 
 BoidSystem::BoidSystem(const float closeDistance, const size_t numOfParticles) :
@@ -112,7 +127,6 @@ BoidSystem::BoidSystem(const float closeDistance, const size_t numOfParticles) :
 FlowSystem::FlowSystem() : 
 	System()
 {
-	Runge_KuttaIntegrator::get().setAddToBuffer(true);
 	
 	m_maxNumThreads = omp_get_max_threads();
 	m_threadRemoveBuffers = new size_t*[m_maxNumThreads];
@@ -129,7 +143,7 @@ FlowSystem::FlowSystem() :
 	m_actors.reserve(m_numParticles);
 
 	m_particlePool->startUp(sizeof(Particle<FlowSystem>),  m_numParticles);
-
+	
 	ActorContainer c = ActorContainer(m_particlePool, nullptr);
 	c.actor = new SquareEmitter<FlowSystem>(FW::Vec3f(0.01f, -1.f, -1.f), FW::Vec3f(0.01f, 1.f, -1.f), FW::Vec3f(0.01f, -1.f, 1.f),time, 15.0f, 1.0f, false);
 	c.status = ActorContainer::ActiveStatus_Active;
@@ -156,10 +170,16 @@ FlowSystem::~FlowSystem()
 		}
 	}
 	
-	for(auto i : m_vortexList) { delete i; }
+	for(auto i : m_vortexList)
+	{
+		delete i; 
+	}
 
-	for( auto i = 0u; i < m_maxNumThreads; i++ ) delete[] m_threadRemoveBuffers[i];
-	delete m_threadRemoveBuffers;
+	for( auto i = 0u; i < m_maxNumThreads; i++ ) 
+		delete[] m_threadRemoveBuffers[i];
+	
+	delete[] m_threadRemoveBuffers;
+	delete[] m_threadRemoveBufferIndex;
 
 	m_particlePool->shutDown();
 	delete m_particlePool;
@@ -377,15 +397,8 @@ void FlowSystem::evalSystem(const float dt)
 		{
 			size_t index = m_threadRemoveBuffers[threadIndex][i];
 			Actor* a = m_actors[index].actor;
-			if(a->getActorType() == ActorType_Particle)
-			{
-				a->~Actor();
-				m_particlePool->release((unsigned char*) a);
-			}
-			else
-			{
-				delete a;
-			}
+			a->~Actor();
+			m_particlePool->release((unsigned char*) a);
 			m_actors[index].actor = nullptr;
 			m_freeContainerIndices.push_back(index);
 		}
@@ -403,7 +416,6 @@ void FlowSystem::evalSystem(const float dt)
 
 			Actor* a = m_actors[i].actor;
 			a->updateStateFromBuffer();
-			a->resetStateBuffer();
 		}
 	}
 }
@@ -424,6 +436,11 @@ void System::updateMesh()
 		if(i.isActive())
 			i.actor->draw(renderer);
 	}
+}
+
+void System::loadStaticMesh()
+{
+
 }
 
 void BoidSystem::evalSystem(const float dt)

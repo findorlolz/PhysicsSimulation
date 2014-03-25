@@ -173,6 +173,7 @@
       <WarningLevel>Level4</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>false</OpenMPSupport>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -347,6 +348,7 @@
     <ClInclude Include="src\basis\HelpFunctions.h" />
     <ClInclude Include="src\basis\Integrator.h" />
     <ClInclude Include="src\basis\Memory.h" />
+    <ClInclude Include="src\basis\RayTracer.h" />
     <ClInclude Include="src\basis\Renderer.h" />
     <ClInclude Include="src\basis\System.h" />
     <ClInclude Include="src\basis\Vector.h" />
@@ -358,8 +360,12 @@
     <ClCompile Include="src\basis\FlowGrid.cpp" />
     <ClCompile Include="src\basis\Integrator.cpp" />
     <ClCompile Include="src\basis\Memory.cpp" />
+    <ClCompile Include="src\basis\RayTracer.cpp" />
     <ClCompile Include="src\basis\Renderer.cpp" />
     <ClCompile Include="src\basis\System.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="src\basis\rtIntersect.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

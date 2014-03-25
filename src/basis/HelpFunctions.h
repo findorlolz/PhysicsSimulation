@@ -8,6 +8,59 @@
 #include <base/Math.hpp>
 #include <iostream>
 
+enum Axis
+{
+	Xa,
+	Ya,
+	Za
+};
+
+struct Triangle
+{
+	FW::Vec3f*	m_vertices[3];
+	void*	    m_userPointer;
+};
+
+struct TriangleToMeshData
+{
+	int			submeshIndex;
+	int			vertexIndex;
+};
+
+struct Node
+{
+	FW::Vec3f BBMax;
+	FW::Vec3f BBMin;
+	size_t startPrim, endPrim;
+	Node* leftChild;
+	Node* rightChild;
+	Axis axis;
+};
+
+class BB
+{
+public:
+	BB(){}
+	BB(FW::Vec3f& mi, FW::Vec3f& ma) :
+		max(ma),
+		min(mi)
+	{
+		calculateArea();
+	}
+
+	FW::Vec3f max;
+	FW::Vec3f min;
+	float area;
+
+	void calculateArea() 
+	{
+		FW::Vec3f tmp = max - min;
+		area = abs(tmp.x * tmp.y) + abs(tmp.x * tmp.z) + abs(tmp.y * tmp.z);
+	}
+
+	void set(FW::Vec3f& mi, FW::Vec3f& ma) {min = mi, max = ma; }
+};
+
 inline static int indexBasedOnFloat(const float size, float value, float& d)
 {
 	int i = 0;

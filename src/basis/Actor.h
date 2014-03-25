@@ -152,7 +152,7 @@ public:
 		setStateBuffer(m_state);
 	}
 
-	virtual ~Vortex() {}
+	virtual ~Vortex() { delete m_carrier; }
 	virtual FW::Vec3f getPos() const { return m_carrier->getPos(); }
 	virtual void updateStateFromBuffer() { setState(m_stateBuffer); m_effectedActors.clear(); }
 	virtual void addEffectedActor(Actor* a) { m_effectedActors.push_back(a); }
@@ -305,7 +305,12 @@ public:
 			float sqr_r1 = FW::sqrt(m_randomGen.getF32(0,1.0f));
 			float r2 = m_randomGen.getF32(0,1.0f);
 			FW::Vec3f p = (1-sqr_r1)*m_posA + sqr_r1*(1-r2)*m_posB + sqr_r1*r2*m_posC;
-			FW::Vec3f v = FW::Vec3f(1.0f, 0.0f, 0.0f);
+			float r3 = m_randomGen.getF32(m_minSpeed, m_maxSpeed);
+			FW::Vec2f rndUnitSquare = m_randomGen.getVec2f(0.0f,1.0f);
+			FW::Vec2f rndUnitDisk = toUnitDisk(rndUnitSquare);
+			FW::Mat3f formBasisMat = formBasis(m_normal);
+			FW::Vec3f rndToUnitHalfSphere = FW::Vec3f(rndUnitDisk.x, rndUnitDisk.y, FW::sqrt(1.0f-(rndUnitDisk.x*rndUnitDisk.x)-(rndUnitDisk.y*rndUnitDisk.y)));
+			FW::Vec3f v = r3*(formBasisMat*rndToUnitHalfSphere);
 			if(m_particleEmitters)
 			{
 				ParticleEmitter<System>* particle = new (((MemPool*) c.data2)->alloc()) ParticleEmitter<System>(1.0f,p,v,m_lifetimeOfParticles, m_lifetimeOfParticles,

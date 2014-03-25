@@ -53,22 +53,22 @@ void App::startUp()
 
 
 void App::shutDown()
-{
-	
-	Renderer::get().shutDown();
-	delete &EulerIntegrator::get();
-	delete &Runge_KuttaIntegrator::get();
-
+{	
 	if(m_assetManager != nullptr)
 	{
 		m_assetManager->ReleaseAssets();
 		delete m_assetManager;
 	}
-
+	
 	if(m_system != nullptr)
 	{
 		delete m_system;
 	}
+
+	Renderer::get().shutDown();
+
+	delete &EulerIntegrator::get();
+	delete &Runge_KuttaIntegrator::get();
 }
 
 bool App::handleEvent( const Window::Event& event )

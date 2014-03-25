@@ -10,6 +10,8 @@ class ActorContainer;
 class State;
 class MemPool;
 class FlowControl;
+struct Triangle;
+struct TriangleToMeshData;
 
 const size_t threadBufferSize = 10240;
 
@@ -35,7 +37,6 @@ public:
 	void* data1;						
 	void* data2;					
 	ActiveStatus status;
-	unsigned int* _pad[1];
 };
 
 class System
@@ -48,9 +49,13 @@ public:
 	virtual void evalSystem(const float) {}
 	virtual void draw(const float);
 	virtual void updateMesh();
+	virtual void loadStaticMesh();
 
 protected:
 	std::vector<ActorContainer> m_actors;
+	std::vector<FW::Vec3f> m_indices;
+	std::vector<Triangle> m_triangles;
+	std::vector<TriangleToMeshData> m_triangleToMeshData;
 };
 
 class ParticleSystem : public System

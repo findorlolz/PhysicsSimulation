@@ -2,6 +2,7 @@
 
 #include "AssetManager.h"
 #include "3d/CameraControls.hpp"
+#include "HelpFunctions.h"
 
 class Renderer
 {
@@ -33,11 +34,15 @@ public:
 		void drawTriangleToCamera(const FW::Vec3f&, const FW::Vec4f&);
 		void drawTriangleToCameraTest(const FW::Vec3f&);
 
+		void initStaticMeshRenderer(std::vector<FW::Vec3f>&, std::vector<Triangle>&, std::vector<TriangleToMeshData>&, MeshType);
+		void clearStaticMeshRenderer() { m_staticMesh = nullptr; }
+
 		void clearDynamicMesh();
 		void exportDynamicMesh();
 
 private:
-		FW::Mesh<FW::VertexPNC> m_dynamicMesh;
+		FW::Mesh<FW::VertexPNC>* m_dynamicMesh;
+		FW::MeshBase* m_staticMesh;
 		FW::Mat4f m_projection;
 		FW::Mat4f m_worldToCamera;
 		FW::Mat4f m_meshScale;
